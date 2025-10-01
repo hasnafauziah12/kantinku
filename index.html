@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Jadwal Pelajaran</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Shadows+Into+Light&family=Inter:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f3e9;
+            color: #333;
+            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M0 10L100 10M0 20L100 20M0 30L100 30M0 40L100 40M0 50L100 50M0 60L100 60M0 70L100 70M0 80L100 80M0 90L100 90" stroke="%23e8e2d4" stroke-width="1"%3E%3C/path%3E%3C/svg%3E');
+            background-size: 100px 100px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 2px solid #a8a29e;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 30px;
+            height: 100%;
+            background-color: #f2e7d7;
+            border-right: 1px solid #d4c7b6;
+        }
+        h1, h2, #modal-title {
+            font-family: 'Shadows+Into+Light', cursive;
+            color: #4b5563;
+        }
+        /* Sel dapat diklik HANYA untuk editor */
+        .editable-cell {
+            transition: background-color 0.2s, box-shadow 0.2s;
+            min-height: 4rem;
+            border-radius: 0.5rem;
+        }
+        /* Style untuk editor */
+        .editor-mode-cell {
+            cursor: pointer;
+        }
+        .editor-mode-cell:hover {
+            background-color: #f5f5f4;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            background-color: #f5f5f4;
+            border: 1px solid #d4c7b6;
+            color: #333;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2f855a;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            z-index: 50;
+            animation: fadeInOut 3s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background-color: #f5f5f4;
+            color: #333;
+            border: 1px solid #d4c7b6;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #9d7c67;
+        }
+        .highlight {
+            border-color: #fcd34d !important;
+            box-shadow: 0 0 20px 5px rgba(252, 211, 77, 0.8);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-amber-50 text-gray-800 min-h-screen p-8">
+
+    <!-- Kontainer Halaman Login -->
+    <div id="login-page" class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm w-full border border-gray-300">
+            <h1 class="text-3xl font-bold mb-4 text-amber-800 font-['Shadows_Into_Light']">Selamat Datang</h1>
+            <p class="mb-6 text-gray-500">Masuk. Gunakan 'ale' atau 'siswa' dengan password '12345'.</p>
+            <form id="login-form">
+                <input type="text" id="username-input" class="input-field mb-4" placeholder="Nama Pengguna (ale/siswa)" required>
+                <input type="password" id="password-input" class="input-field mb-4" placeholder="Kata Sandi (12345)" required>
+                <div id="login-error" class="text-red-500 text-sm mb-4 hidden">Nama pengguna atau kata sandi salah.</div>
+                <button type="submit" id="login-btn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
+                    Masuk
+                </button>
+            </form>
+            <div id="loading-spinner" class="hidden mt-6 text-center">
+                <svg class="animate-spin h-8 w-8 text-amber-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2 text-gray-500">Memuat data...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kontainer Aplikasi Utama -->
+    <div id="main-app" class="container hidden">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+            <div class="flex flex-col md:flex-row md:items-center mb-4 md:mb-0 space-y-2 md:space-y-0 md:space-x-4">
+                <h1 id="app-title" class="text-4xl font-bold text-amber-800 font-['Shadows_Into_Light']"></h1>
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <!-- Input baru dengan datalist -->
+                    <input type="text" id="class-input" list="class-list" placeholder="Cari atau pilih kelas..." class="input-field w-full md:w-64">
+                    <datalist id="class-list">
+                        <!-- Opsi akan diisi oleh JavaScript -->
+                    </datalist>
+                    <button id="search-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
+                        Cari
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="user-id-display" class="bg-gray-200 text-gray-600 text-xs py-2 px-4 rounded-full"></span>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors">
+                    Keluar
+                </button>
+            </div>
+        </div>
+        <p id="edit-hint" class="text-gray-500 mb-8 hidden">Klik pada sel mana pun untuk menulis pelajaran, guru, dan waktu.</p>
+
+        <!-- Kontainer untuk Jadwal -->
+        <div id="schedule-container" class="space-y-8">
+            <!-- Konten jadwal akan dirender di sini oleh JavaScript -->
+        </div>
+
+        <!-- Modal untuk Edit -->
+        <div id="edit-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3 id="modal-title" class="text-xl font-semibold mb-4 text-amber-800 font-['Shadows_Into_Light']">Tulis Jadwal</h3>
+                
+                <label for="pelajaran-input" class="block text-gray-500">Nama Pelajaran</label>
+                <input type="text" id="pelajaran-input" placeholder="Masukkan nama pelajaran" class="input-field">
+                
+                <label for="guru-input" class="block text-gray-500 mt-2">Nama Guru</label>
+                <input type="text" id="guru-input" placeholder="Masukkan nama guru" class="input-field">
+                
+                <label class="block text-gray-500 mt-2">Jam Mulai</label>
+                <div class="flex space-x-2">
+                    <select id="start-hour-select" class="input-field w-1/2"></select>
+                    <select id="start-minute-select" class="input-field w-1/2"></select>
+                </div>
+                
+                <label class="block text-gray-500 mt-2">Jam Selesai</label>
+                <div class="flex space-x-2">
+                    <select id="end-hour-select" class="input-field w-1/2"></select>
+                    <select id="end-minute-select" class="input-field w-1/2"></select>
+                </div>
+
+                <div class="mt-6 flex justify-between space-x-4">
+                    <!-- Tombol delete dan save akan disembunyikan untuk role 'siswa' -->
+                    <button id="delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
+                        <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 011 1v6a1 1 0 11-2 0V8a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                        Hapus
+                    </button>
+                    <div class="flex space-x-4">
+                        <button id="cancel-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
+                            <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        Batal
+                        </button>
+                        <button id="save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
+                            <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7 11a1 1 0 012 0v2h2a1 1 0 110 2h-2v2a1 1 0 11-2 0v-2H7a1 1 0 110-2h2v-2z"></path><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM2 10a8 8 0 1116 0 8 8 0 01-16 0z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notifikasi -->
+        <div id="notification" class="hidden notification">
+            Jadwal berhasil diperbarui!
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Set Firebase log level for debugging purposes.
+        setLogLevel('debug');
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Error initializing Firebase:", e);
+        }
+
+        const loginPage = document.getElementById('login-page');
+        const mainApp = document.getElementById('main-app');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const logoutBtn = document.getElementById('logout-btn');
+        const scheduleContainer = document.getElementById('schedule-container');
+        const editModal = document.getElementById('edit-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const pelajaranInput = document.getElementById('pelajaran-input');
+        const guruInput = document.getElementById('guru-input');
+        const startHourSelect = document.getElementById('start-hour-select');
+        const startMinuteSelect = document.getElementById('start-minute-select');
+        const endHourSelect = document.getElementById('end-hour-select');
+        const endMinuteSelect = document.getElementById('end-minute-select');
+        const saveBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const notificationElement = document.getElementById('notification');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const appTitle = document.getElementById('app-title');
+        const editHint = document.getElementById('edit-hint'); // Petunjuk edit
+
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username-input');
+        const passwordInput = document.getElementById('password-input');
+        const loginError = document.getElementById('login-error');
+        
+        const classInput = document.getElementById('class-input');
+        const classList = document.getElementById('class-list');
+        const searchBtn = document.getElementById('search-btn');
+
+        let currentScheduleRef, userId;
+        let scheduleData = {};
+        let userRole = null; // Tambahkan variabel untuk menyimpan peran pengguna: 'editor' atau 'student'
+        const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+        const lessonsPerDay = 5;
+
+        // KREDENSIAL LOGIN:
+        const HARDCODED_CREDENTIALS = {
+            'ale': 'editor', // Admin/Editor
+            'siswa': 'student' // Siswa (Hanya lihat)
+        };
+        const HARDCODED_PASSWORD = '12345';
+
+        // Handler untuk form login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            if (HARDCODED_CREDENTIALS[username] && password === HARDCODED_PASSWORD) {
+                userRole = HARDCODED_CREDENTIALS[username]; // Set peran
+                loginError.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                
+                // Lanjutkan ke otentikasi Firebase
+                try {
+                    // Karena kita tidak memiliki token custom yang berbeda untuk setiap peran,
+                    // kita tetap menggunakan alur sign in standar, dan membedakan akses berdasarkan userRole lokal.
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) {
+                    console.error("Error signing in:", e);
+                    loadingSpinner.innerHTML = "<p>Gagal login. Silakan coba lagi.</p>";
+                    loginForm.classList.remove('hidden');
+                }
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        // Handler untuk logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                userRole = null; // Reset peran
+                // Setelah logout, tampilkan kembali halaman login
+                loginPage.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                usernameInput.value = '';
+                passwordInput.value = '';
+            } catch (e) {
+                console.error("Error signing out:", e);
+            }
+        });
+        
+        // Fungsi untuk autentikasi dan muat data
+        onAuthStateChanged(auth, async (user) => {
+            if (user && userRole) { // Pastikan user dan role sudah diset
+                userId = user.uid;
+                userIdDisplay.textContent = `ID Pengguna: ${userId} (${userRole === 'editor' ? 'Editor' : 'Siswa'})`;
+                
+                // Atur judul dan petunjuk sesuai peran
+                if (userRole === 'editor') {
+                    appTitle.textContent = "Jadwal Pelajaran (Mode Editor)";
+                    editHint.classList.remove('hidden');
+                    // Sembunyikan/Tampilkan tombol modal
+                    saveBtn.classList.remove('hidden');
+                    deleteBtn.classList.remove('hidden');
+                } else {
+                    appTitle.textContent = "Halaman Siswa (Hanya Lihat)";
+                    editHint.classList.add('hidden');
+                    // Sembunyikan tombol modal untuk siswa
+                    saveBtn.classList.add('hidden');
+                    deleteBtn.classList.add('hidden');
+                }
+                
+                loadingSpinner.classList.add('hidden');
+                loginPage.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                
+                console.log("User authenticated. Role:", userRole);
+                await loadSchedule(userId);
+            } else {
+                // If not authenticated, ensure login page is shown
+                loginPage.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                loadingSpinner.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+            }
+        });
+
+        // Load data from Firestore in real-time
+        async function loadSchedule(currentUserId) {
+            currentScheduleRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'schedules', 'my-schedule');
+            
+            onSnapshot(currentScheduleRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    scheduleData = docSnap.data();
+                    console.log("Data loaded from Firestore:", scheduleData);
+                } else {
+                    console.log("No data found, initializing with dummy data.");
+                    scheduleData = createDummyData();
+                    // Hanya editor yang boleh menyimpan data awal
+                    if(userRole === 'editor') {
+                        setDoc(currentScheduleRef, scheduleData); 
+                    }
+                }
+                sortScheduleByTime(scheduleData);
+                renderSchedule();
+                populateClassDatalist();
+            }, (error) => {
+                console.error("Error getting real-time updates:", error);
+            });
+        }
+
+        // Fungsi baru untuk mengisi datalist kelas
+        function populateClassDatalist() {
+            classList.innerHTML = ''; // Kosongkan daftar sebelumnya
+            const classNames = Object.keys(scheduleData).sort();
+            classNames.forEach(className => {
+                const option = document.createElement('option');
+                option.value = className;
+                classList.appendChild(option);
+            });
+        }
+
+        function createDummyData() {
+            return {
+                "Kelas 10A": {
+                    "Senin": [
+                        { pelajaran: "Matematika", guru: "Bapak Budi", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Fisika", guru: "Ibu Siti", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Bahasa Inggris", guru: "Bapak Alex", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Seni Rupa", guru: "Ibu Anisa", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Biologi", guru: "Bapak Candra", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Selasa": [
+                        { pelajaran: "Kimia", guru: "Ibu Desi", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Sejarah", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Geografi", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "TIK", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Rabu": [
+                        { pelajaran: "Ekonomi", guru: "Bapak Joko", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Sosiologi", guru: "Ibu Karina", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Prakarya", guru: "Bapak Lutfi", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Agama", guru: "Ibu Maya", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "PKN", guru: "Bapak Naufal", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Kamis": [
+                        { pelajaran: "Olahraga", guru: "Bapak Budi", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Bahasa Jerman", guru: "Ibu Siti", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Fisika", guru: "Bapak Alex", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Matematika", guru: "Ibu Anisa", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Kimia", guru: "Bapak Candra", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Jumat": [
+                        { pelajaran: "Biologi", guru: "Ibu Desi", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "TIK", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Seni Budaya", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Ekonomi", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ]
+                },
+                "Kelas 11A": {
+                    "Senin": [
+                        { pelajaran: "Matematika Lanjut", guru: "Bapak Rahmat", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Fisika Kuantum", guru: "Ibu Dewi", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Bahasa Inggris Lanjutan", guru: "Bapak Eko", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Biologi Sel", guru: "Ibu Fitri", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Kimia Organik", guru: "Bapak Gani", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Selasa": [
+                        { pelajaran: "Sejarah Dunia", guru: "Ibu Hani", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Sosiologi", guru: "Bapak Indra", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Kiki", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Geografi", guru: "Bapak Leo", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Ekonomi", guru: "Ibu Mira", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Rabu": [
+                        { pelajaran: "TIK", guru: "Bapak Nanda", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Pendidikan Agama", guru: "Ibu Oka", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Olahraga", guru: "Bapak Panca", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Prakarya", guru: "Ibu Qori", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "PKN", guru: "Bapak Rio", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Kamis": [
+                        { pelajaran: "Seni Musik", guru: "Ibu Sinta", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Matematika Lanjut", guru: "Bapak Taufik", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Fisika Kuantum", guru: "Ibu Vina", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Bahasa Inggris Lanjutan", guru: "Bapak Wahyu", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Biologi Sel", guru: "Ibu Yanti", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Jumat": [
+                        { pelajaran: "Kimia Organik", guru: "Bapak Zaki", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Sejarah Dunia", guru: "Ibu Ami", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Sosiologi", guru: "Bapak Bani", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Ekonomi", guru: "Ibu Cici", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "TIK", guru: "Bapak Dini", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ]
+                },
+                "Kelas 11B": {
+                    "Senin": [
+                        { pelajaran: "Kimia", guru: "Ibu Ela", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Sejarah", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Geografi", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "TIK", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Selasa": [
+                        { pelajaran: "Matematika", guru: "Bapak Joko", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Fisika", guru: "Ibu Karina", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Bahasa Inggris", guru: "Bapak Lutfi", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Seni Rupa", guru: "Ibu Maya", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Biologi", guru: "Bapak Naufal", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Rabu": [
+                        { pelajaran: "Ekonomi", guru: "Bapak Budi", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Sosiologi", guru: "Ibu Siti", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Prakarya", guru: "Bapak Alex", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Agama", guru: "Ibu Anisa", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "PKN", guru: "Bapak Candra", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Kamis": [
+                        { pelajaran: "Bahasa Jerman", guru: "Ibu Desi", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Fisika", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Kimia", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Matematika", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Olahraga", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Jumat": [
+                        { pelajaran: "Biologi", guru: "Bapak Joko", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "TIK", guru: "Ibu Karina", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Seni Budaya", guru: "Bapak Lutfi", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Ekonomi", guru: "Ibu Maya", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Bahasa Indonesia", guru: "Bapak Naufal", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ]
+                },
+                "Kelas 12A": {
+                    "Senin": [
+                        { pelajaran: "Sistem Informasi", guru: "Bapak Rio", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Struktur Data", guru: "Ibu Sinta", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Algoritma", guru: "Bapak Taufik", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Desain Grafis", guru: "Ibu Vina", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Jaringan Komputer", guru: "Bapak Wahyu", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Selasa": [
+                        { pelajaran: "Bahasa Jepang", guru: "Ibu Yanti", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Kimia", guru: "Bapak Zaki", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Fisika", guru: "Ibu Ami", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Matematika", guru: "Bapak Bani", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Biologi", guru: "Ibu Cici", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Rabu": [
+                        { pelajaran: "Pendidikan Vokasi", guru: "Bapak Dini", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Kewirausahaan", guru: "Ibu Ela", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Seni Rupa", guru: "Bapak Fajar", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Pendidikan Agama", guru: "Ibu Gita", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "PKN", guru: "Bapak Hadi", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Kamis": [
+                        { pelajaran: "Olahraga", guru: "Ibu Ira", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Ekonomi", guru: "Bapak Joko", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Sosiologi", guru: "Ibu Karina", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Geografi", guru: "Bapak Lutfi", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Sejarah", guru: "Ibu Maya", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ],
+                    "Jumat": [
+                        { pelajaran: "TIK", guru: "Bapak Naufal", jam_mulai: "07:30", jam_selesai: "08:15" },
+                        { pelajaran: "Seni Budaya", guru: "Ibu Anisa", jam_mulai: "08:15", jam_selesai: "09:00" },
+                        { pelajaran: "Prakarya", guru: "Bapak Candra", jam_mulai: "09:15", jam_selesai: "10:00" },
+                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Desi", jam_mulai: "10:15", jam_selesai: "11:00" },
+                        { pelajaran: "Bahasa Inggris", guru: "Bapak Eko", jam_mulai: "11:15", jam_selesai: "12:00" }
+                    ]
+                }
+            };
+        }
+        
+        function sortScheduleByTime(schedule) {
+            for (const className in schedule) {
+                if (schedule.hasOwnProperty(className)) {
+                    for (const day in schedule[className]) {
+                        if (schedule[className].hasOwnProperty(day) && Array.isArray(schedule[className][day])) {
+                            schedule[className][day].sort((a, b) => {
+                                const [h1, m1] = a.jam_mulai.split(':').map(Number);
+                                const [h2, m2] = b.jam_mulai.split(':').map(Number);
+                                if (h1 !== h2) {
+                                    return h1 - h2;
+                                }
+                                return m1 - m2;
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fungsi utama untuk merender jadwal
+        function renderSchedule() {
+            // Dapatkan nama-nama kelas dan urutkan secara alfabetis
+            const classNames = Object.keys(scheduleData).sort();
+            
+            // Render setiap tabel kelas secara terpisah
+            classNames.forEach(className => {
+                renderClassTable(className);
+            });
+
+            // Hapus tabel yang tidak lagi ada
+            const existingCards = document.querySelectorAll('.class-card');
+            existingCards.forEach(card => {
+                const className = card.dataset.className;
+                if (!scheduleData.hasOwnProperty(className)) {
+                    card.remove();
+                }
+            });
+
+            // Tambahkan event listener setelah semua elemen dirender
+            addEventListeners();
+        }
+
+        // Fungsi untuk merender atau memperbarui tabel untuk satu kelas
+        function renderClassTable(className) {
+            const classData = scheduleData[className];
+            let classCard = document.getElementById(`card-${className}`);
+
+            // Jika kartu kelas belum ada, buat yang baru
+            if (!classCard) {
+                classCard = document.createElement('div');
+                classCard.id = `card-${className}`;
+                classCard.dataset.className = className;
+                classCard.className = 'card class-card';
+                classCard.innerHTML = `
+                    <h2 class="text-2xl font-bold mb-4 text-center text-amber-800">${className}</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left rounded-lg overflow-hidden border border-gray-300">
+                            <thead class="bg-amber-700 text-gray-100 font-['Shadows_Into_Light']">
+                                <tr>
+                                    <th class="py-2 px-4 border-b-2 border-amber-600">Pelajaran</th>
+                                    ${daysOfWeek.map(day => `<th class="py-2 px-4 border-b-2 border-amber-600 text-center">${day}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-body-${className}">
+                                <!-- Baris jadwal akan dirender di sini -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                // Temukan posisi yang benar untuk menyisipkan kartu baru
+                const classNames = Object.keys(scheduleData).sort();
+                const index = classNames.indexOf(className);
+                if (index > 0) {
+                    const prevClassName = classNames[index - 1];
+                    const prevCard = document.getElementById(`card-${prevClassName}`);
+                    if (prevCard) {
+                        prevCard.insertAdjacentElement('afterend', classCard);
+                    } else {
+                        scheduleContainer.appendChild(classCard);
+                    }
+                } else {
+                    scheduleContainer.prepend(classCard);
+                }
+            }
+            
+            // Perbarui konten tbody
+            const tbody = document.getElementById(`schedule-body-${className}`);
+            tbody.innerHTML = '';
+            for (let i = 0; i < lessonsPerDay; i++) {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-amber-100 transition-colors';
+                row.innerHTML = `<td class="py-2 px-4 border-t border-gray-300 font-bold text-gray-600">Pelajaran ${i + 1}</td>`;
+                
+                daysOfWeek.forEach(day => {
+                    const lesson = classData[day]?.[i];
+                    const cell = document.createElement('td');
+                    cell.className = 'py-2 px-4 border-t border-gray-300 text-center editable-cell';
+                    // Tambahkan kelas khusus jika pengguna adalah editor
+                    if(userRole === 'editor') {
+                         cell.classList.add('editor-mode-cell');
+                    }
+                    cell.dataset.className = className;
+                    cell.dataset.day = day;
+                    cell.dataset.lessonIndex = i;
+                    cell.innerHTML = lesson ? `
+                        <div class="font-bold text-gray-800">${lesson.pelajaran}</div>
+                        <div class="text-xs text-gray-600">(${lesson.guru})</div>
+                        <div class="text-xs text-gray-500">${lesson.jam_mulai} - ${lesson.jam_selesai}</div>
+                    ` : '<div class="text-gray-400 text-sm">Kosong</div>';
+                    row.appendChild(cell);
+                });
+                tbody.appendChild(row);
+            }
+        }
+
+        function showEditModal(className, day, lessonIndex) {
+            // Jika peran adalah siswa, jangan tampilkan modal
+            if (userRole !== 'editor') return;
+
+            const lessonData = scheduleData[className]?.[day]?.[lessonIndex];
+            
+            modalTitle.textContent = `Tulis Jadwal - ${day} | Pelajaran ${lessonIndex + 1}`;
+            pelajaranInput.value = lessonData?.pelajaran || '';
+            guruInput.value = lessonData?.guru || '';
+            
+            const createTimeOptions = (selectElement) => {
+                selectElement.innerHTML = '';
+                for (let i = 0; i < 24; i++) {
+                    const option = document.createElement('option');
+                    option.value = i.toString().padStart(2, '0');
+                    option.textContent = i.toString().padStart(2, '0');
+                    selectElement.appendChild(option);
+                }
+            };
+
+            const createMinuteOptions = (selectElement) => {
+                selectElement.innerHTML = '';
+                for (let i = 0; i < 60; i += 5) {
+                    const option = document.createElement('option');
+                    option.value = i.toString().padStart(2, '0');
+                    option.textContent = i.toString().padStart(2, '0');
+                    selectElement.appendChild(option);
+                }
+            };
+            
+            createTimeOptions(startHourSelect);
+            createMinuteOptions(startMinuteSelect);
+            createTimeOptions(endHourSelect);
+            createMinuteOptions(endMinuteSelect);
+
+            const [startHour, startMinute] = (lessonData?.jam_mulai || '00:00').split(':').map(Number);
+            startHourSelect.value = startHour.toString().padStart(2, '0');
+            startMinuteSelect.value = startMinute.toString().padStart(2, '0');
+            
+            const [endHour, endMinute] = (lessonData?.jam_selesai || '00:00').split(':').map(Number);
+            endHourSelect.value = endHour.toString().padStart(2, '0');
+            endMinuteSelect.value = endMinute.toString().padStart(2, '0');
+
+            editModal.dataset.className = className;
+            editModal.dataset.day = day;
+            editModal.dataset.lessonIndex = lessonIndex;
+            editModal.classList.remove('hidden');
+            pelajaranInput.focus();
+        }
+
+        function hideEditModal() {
+            editModal.classList.add('hidden');
+        }
+
+        function showNotification(message = "Jadwal berhasil diperbarui!") {
+            notificationElement.textContent = message;
+            notificationElement.classList.remove('hidden');
+            setTimeout(() => {
+                notificationElement.classList.add('hidden');
+            }, 3000);
+        }
+
+        async function saveEdit() {
+            if (userRole !== 'editor') return; // Pastikan hanya editor yang bisa menyimpan
+            
+            const className = editModal.dataset.className;
+            const day = editModal.dataset.day;
+            const lessonIndex = editModal.dataset.lessonIndex;
+
+            const newPelajaran = pelajaranInput.value;
+            const newGuru = guruInput.value;
+            const newStartJam = `${startHourSelect.value}:${startMinuteSelect.value}`;
+            const newEndJam = `${endHourSelect.value}:${endMinuteSelect.value}`;
+
+            if (!scheduleData[className][day]) {
+                scheduleData[className][day] = [];
+            }
+            
+            scheduleData[className][day][lessonIndex] = {
+                pelajaran: newPelajaran,
+                guru: newGuru,
+                jam_mulai: newStartJam,
+                jam_selesai: newEndJam
+            };
+
+            sortScheduleByTime(scheduleData);
+
+            try {
+                await setDoc(currentScheduleRef, scheduleData, { merge: true });
+                console.log("Data successfully saved to Firestore.");
+                showNotification(); 
+            } catch (e) {
+                console.error("Error saving data:", e);
+                showNotification("Gagal menyimpan jadwal!");
+            }
+
+            hideEditModal();
+        }
+
+        async function deleteLesson() {
+            if (userRole !== 'editor') return; // Pastikan hanya editor yang bisa menghapus
+
+            const className = editModal.dataset.className;
+            const day = editModal.dataset.day;
+            const lessonIndex = editModal.dataset.lessonIndex;
+
+            if (scheduleData[className] && scheduleData[className][day]) {
+                scheduleData[className][day].splice(lessonIndex, 1);
+
+                try {
+                    await setDoc(currentScheduleRef, scheduleData, { merge: true });
+                    console.log("Lesson successfully deleted from Firestore.");
+                    showNotification("Pelajaran berhasil dihapus!");
+                } catch (e) {
+                    console.error("Error deleting data:", e);
+                    showNotification("Gagal menghapus pelajaran!");
+                }
+            }
+            hideEditModal();
+        }
+
+        function addEventListeners() {
+            // Hapus semua listener sebelumnya untuk menghindari duplikasi
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.removeEventListener('click', handleCellClick);
+            });
+
+            // Hanya tambahkan listener jika peran adalah editor
+            if (userRole === 'editor') {
+                document.querySelectorAll('.editor-mode-cell').forEach(cell => {
+                    cell.addEventListener('click', handleCellClick);
+                });
+            }
+        }
+        
+        // Fungsi handler terpisah untuk dapat dihapus
+        function handleCellClick() {
+            const classCard = this.closest('.class-card');
+            
+            // Hapus animasi highlight dari kartu saat sel diklik
+            if (classCard && classCard.classList.contains('highlight')) {
+                classCard.classList.remove('highlight');
+            }
+
+            const className = this.dataset.className;
+            const day = this.dataset.day;
+            const lessonIndex = this.dataset.lessonIndex;
+            showEditModal(className, day, lessonIndex);
+        }
+        
+        saveBtn.addEventListener('click', saveEdit);
+        cancelBtn.addEventListener('click', hideEditModal);
+        deleteBtn.addEventListener('click', deleteLesson);
+        
+        editModal.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && userRole === 'editor') {
+                e.preventDefault();
+                saveEdit();
+            }
+        });
+        
+        // --- Logika Pencarian ---
+        searchBtn.addEventListener('click', searchAndHighlight);
+        classInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                searchAndHighlight();
+            }
+        });
+        
+        function searchAndHighlight() {
+            const query = classInput.value.toLowerCase().trim();
+            if (!query) return;
+
+            // Hapus highlight sebelumnya
+            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+            
+            // Cari kecocokan
+            let foundElement = null;
+
+            // 1. Cari kelas
+            for (const className of Object.keys(scheduleData)) {
+                if (className.toLowerCase().includes(query)) {
+                    const card = document.getElementById(`card-${className}`);
+                    if (card) {
+                        foundElement = card;
+                        break;
+                    }
+                }
+            }
+
+            if (foundElement) {
+                foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                foundElement.classList.add('highlight');
+            } else {
+                showNotification("Tidak ditemukan hasil untuk pencarian Anda.");
+            }
+        }
+        
+        // Polyfill matches (untuk mendukung closest)
+        if (!Element.prototype.matches) {
+            Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+        }
+
+        if (!Element.prototype.closest) {
+            Element.prototype.closest = function (s) {
+                let el = this;
+                do {
+                    if (el.matches(s)) return el;
+                    el = el.parentElement || el.parentNode;
+                } while (el !== null && el.nodeType === 1);
+                return null;
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('td div').forEach(el => {
+                if (el.textContent.includes('Matematika')) {
+                    el.classList.add('text-blue-600');
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
