@@ -3,917 +3,1233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Jadwal Pelajaran</title>
+    <title>Kantin Digital</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Shadows+Into+Light&family=Inter:wght@400;600&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f3e9;
-            color: #333;
-            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M0 10L100 10M0 20L100 20M0 30L100 30M0 40L100 40M0 50L100 50M0 60L100 60M0 70L100 70M0 80L100 80M0 90L100 90" stroke="%23e8e2d4" stroke-width="1"%3E%3C/path%3E%3C/svg%3E');
-            background-size: 100px 100px;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
         }
-        .card {
-            background-color: #ffffff;
-            border: 2px solid #a8a29e;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.5s ease-in-out;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 30px;
-            height: 100%;
-            background-color: #f2e7d7;
-            border-right: 1px solid #d4c7b6;
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        h1, h2, #modal-title {
-            font-family: 'Shadows+Into+Light', cursive;
-            color: #4b5563;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
-        /* Sel dapat diklik HANYA untuk editor */
-        .editable-cell {
-            transition: background-color 0.2s, box-shadow 0.2s;
-            min-height: 4rem;
-            border-radius: 0.5rem;
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
         }
-        /* Style untuk editor */
-        .editor-mode-cell {
-            cursor: pointer;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
-        .editor-mode-cell:hover {
-            background-color: #f5f5f4;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            padding: 2rem;
-            border-radius: 1rem;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
-        }
-        .modal-content input, .modal-content select {
-            width: 100%;
-            background-color: #f5f5f4;
-            border: 1px solid #d4c7b6;
-            color: #333;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            margin-top: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .notification {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #2f855a;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            z-index: 50;
-            animation: fadeInOut 3s forwards;
-        }
-        @keyframes fadeInOut {
-            0% { opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-        .icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-        .input-field {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            background-color: #f5f5f4;
-            color: #333;
-            border: 1px solid #d4c7b6;
-            transition: border-color 0.2s;
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: #9d7c67;
-        }
-        .highlight {
-            border-color: #fcd34d !important;
-            box-shadow: 0 0 20px 5px rgba(252, 211, 77, 0.8);
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.01); }
-            100% { transform: scale(1); }
+        .status-badge {
+            transition: all 0.3s ease;
         }
     </style>
 </head>
-<body class="bg-amber-50 text-gray-800 min-h-screen p-8">
+<body class="bg-gray-100">
 
-    <!-- Kontainer Halaman Login -->
-    <div id="login-page" class="flex flex-col items-center justify-center min-h-screen p-4">
-        <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm w-full border border-gray-300">
-            <h1 class="text-3xl font-bold mb-4 text-amber-800 font-['Shadows_Into_Light']">Selamat Datang</h1>
-            <p class="mb-6 text-gray-500">Masuk. Gunakan 'ale' atau 'siswa' dengan password '12345'.</p>
-            <form id="login-form">
-                <input type="text" id="username-input" class="input-field mb-4" placeholder="Nama Pengguna (ale/siswa)" required>
-                <input type="password" id="password-input" class="input-field mb-4" placeholder="Kata Sandi (12345)" required>
-                <div id="login-error" class="text-red-500 text-sm mb-4 hidden">Nama pengguna atau kata sandi salah.</div>
-                <button type="submit" id="login-btn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
-                    Masuk
-                </button>
-            </form>
-            <div id="loading-spinner" class="hidden mt-6 text-center">
-                <svg class="animate-spin h-8 w-8 text-amber-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p class="mt-2 text-gray-500">Memuat data...</p>
-            </div>
-        </div>
-    </div>
+    <!-- Container Utama -->
+    <div id="app" class="max-w-7xl mx-auto">
 
-    <!-- Kontainer Aplikasi Utama -->
-    <div id="main-app" class="container hidden">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-            <div class="flex flex-col md:flex-row md:items-center mb-4 md:mb-0 space-y-2 md:space-y-0 md:space-x-4">
-                <h1 id="app-title" class="text-4xl font-bold text-amber-800 font-['Shadows_Into_Light']"></h1>
-                <div class="flex items-center space-x-2 w-full md:w-auto">
-                    <!-- Input baru dengan datalist -->
-                    <input type="text" id="class-input" list="class-list" placeholder="Cari atau pilih kelas..." class="input-field w-full md:w-64">
-                    <datalist id="class-list">
-                        <!-- Opsi akan diisi oleh JavaScript -->
-                    </datalist>
-                    <button id="search-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full transition-colors">
-                        Cari
-                    </button>
+        <!-- Halaman Login -->
+        <div id="login-page" class="min-h-screen flex items-center justify-center fade-in">
+            <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+                <div class="text-center mb-8">
+                    <!-- Logo -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto mb-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    <h1 class="text-3xl font-bold text-gray-800">Kantin Digital</h1>
+                    <p class="text-gray-500 mt-2">Selamat datang! Silakan login.</p>
+                </div>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                        <input type="text" id="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="nama Anda, admin, atau penjual">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="password">
+                    </div>
+                    <p id="login-error" class="text-red-500 text-sm mb-4 text-center hidden"></p>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">Login</button>
+                </form>
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+                    <h4 class="font-semibold text-center mb-2 text-gray-700">Info Login (Untuk Demo)</h4>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li><b>Siswa:</b> username: `(nama apapun)`, sandi: `123`</li>
+                        <li><b>Admin:</b> username: `admin`, sandi: `admin123`</li>
+                        <li><b>Penjual A:</b> username: `penjual_a`, sandi: `123`</li>
+                        <li><b>Penjual B:</b> username: `penjual_b`, sandi: `123`</li>
+                    </ul>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <span id="user-id-display" class="bg-gray-200 text-gray-600 text-xs py-2 px-4 rounded-full"></span>
-                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors">
-                    Keluar
-                </button>
-            </div>
         </div>
-        <p id="edit-hint" class="text-gray-500 mb-8 hidden">Klik pada sel mana pun untuk menulis pelajaran, guru, dan waktu.</p>
-
-        <!-- Kontainer untuk Jadwal -->
-        <div id="schedule-container" class="space-y-8">
-            <!-- Konten jadwal akan dirender di sini oleh JavaScript -->
-        </div>
-
-        <!-- Modal untuk Edit -->
-        <div id="edit-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h3 id="modal-title" class="text-xl font-semibold mb-4 text-amber-800 font-['Shadows_Into_Light']">Tulis Jadwal</h3>
-                
-                <label for="pelajaran-input" class="block text-gray-500">Nama Pelajaran</label>
-                <input type="text" id="pelajaran-input" placeholder="Masukkan nama pelajaran" class="input-field">
-                
-                <label for="guru-input" class="block text-gray-500 mt-2">Nama Guru</label>
-                <input type="text" id="guru-input" placeholder="Masukkan nama guru" class="input-field">
-                
-                <label class="block text-gray-500 mt-2">Jam Mulai</label>
-                <div class="flex space-x-2">
-                    <select id="start-hour-select" class="input-field w-1/2"></select>
-                    <select id="start-minute-select" class="input-field w-1/2"></select>
-                </div>
-                
-                <label class="block text-gray-500 mt-2">Jam Selesai</label>
-                <div class="flex space-x-2">
-                    <select id="end-hour-select" class="input-field w-1/2"></select>
-                    <select id="end-minute-select" class="input-field w-1/2"></select>
-                </div>
-
-                <div class="mt-6 flex justify-between space-x-4">
-                    <!-- Tombol delete dan save akan disembunyikan untuk role 'siswa' -->
-                    <button id="delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
-                        <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 011 1v6a1 1 0 11-2 0V8a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
-                        Hapus
-                    </button>
-                    <div class="flex space-x-4">
-                        <button id="cancel-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
-                            <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                        Batal
-                        </button>
-                        <button id="save-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
-                            <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7 11a1 1 0 012 0v2h2a1 1 0 110 2h-2v2a1 1 0 11-2 0v-2H7a1 1 0 110-2h2v-2z"></path><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM2 10a8 8 0 1116 0 8 8 0 01-16 0z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
-                            Simpan
-                        </button>
+        
+        <!-- Halaman Pilih Penjual (untuk siswa) -->
+        <div id="seller-selection-page" class="hidden min-h-screen">
+             <header class="bg-white shadow-md sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <h1 class="text-2xl font-bold text-gray-800">Pilih Kantin</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="student-greeting" class="text-gray-600 font-medium hidden sm:block"></span>
+                        <button id="logout-button-select" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Logout</button>
                     </div>
                 </div>
+            </header>
+            <main class="p-4 sm:p-6 lg:p-8">
+                <div class="max-w-2xl mx-auto text-center">
+                    <h2 class="text-3xl font-bold text-gray-800">Mau jajan di mana hari ini?</h2>
+                    <p class="mt-4 text-lg text-gray-600">Silakan pilih kantin untuk melihat menu yang tersedia.</p>
+                </div>
+                <div id="seller-selection-container" class="mt-12 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Seller cards will be injected here -->
+                </div>
+            </main>
+        </div>
+
+        <!-- Halaman Utama Aplikasi (Hidden by default) -->
+        <div id="main-page" class="hidden min-h-screen">
+            <!-- Header -->
+            <header class="bg-white shadow-md sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <!-- Logo -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <h1 id="main-page-title" class="text-2xl font-bold text-gray-800">Kantin Digital</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="change-seller-button" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Ganti Kantin</button>
+                        <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Logout</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Konten Utama -->
+            <main class="p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <!-- Kolom Menu Makanan -->
+                <div class="lg:col-span-2">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-6">Menu Hari Ini</h2>
+                    <div id="menu-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <!-- Menu items will be injected here by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Kolom Keranjang & Status -->
+                <aside class="lg:col-span-1 w-full sticky top-24 space-y-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-gray-700 border-b pb-4 mb-4">Pesanan Anda</h2>
+                        <div id="cart-items" class="space-y-4 max-h-60 overflow-y-auto pr-2">
+                           <!-- Cart items will be injected here -->
+                           <p id="cart-empty" class="text-gray-500 text-center py-8">Keranjang masih kosong.</p>
+                        </div>
+                        <div id="cart-summary" class="mt-6 border-t pt-4 hidden">
+                             <div class="flex justify-between items-center text-lg font-semibold text-gray-800">
+                                <span>Total</span>
+                                <span id="cart-total">Rp 0</span>
+                            </div>
+                            <button id="order-button" class="mt-6 w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105">Pesan Sekarang</button>
+                        </div>
+                    </div>
+                    <!-- Status Pesanan Pengguna -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-gray-700 border-b pb-4 mb-4">Status Pesanan Saya</h2>
+                        <div id="my-orders-list" class="space-y-3 max-h-48 overflow-y-auto pr-2">
+                            <p id="my-orders-empty" class="text-gray-500 text-center py-4">Anda belum memiliki pesanan aktif.</p>
+                        </div>
+                    </div>
+                </aside>
+            </main>
+        </div>
+
+        <!-- Halaman Admin (Hidden by default) -->
+        <div id="admin-page" class="hidden min-h-screen">
+            <!-- Header Admin -->
+            <header class="bg-white shadow-md sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <!-- Logo -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-600 font-medium hidden sm:block">Selamat Datang, Admin!</span>
+                        <button id="logout-button-admin" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Logout</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Konten Admin -->
+            <main class="p-4 sm:p-6 lg:p-8 grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+                <!-- Kolom Kiri: Pesanan -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Semua Pesanan</h3>
+                    <div id="order-list" class="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+                        <p class="text-gray-500">Belum ada pesanan yang masuk.</p>
+                    </div>
+                </div>
+                <!-- Kolom Kanan: Info -->
+                <div class="space-y-8">
+                    <!-- Card 1: Daftar Pengguna -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Manajemen Pengguna</h3>
+                        <form id="add-seller-form" class="mb-6 p-4 bg-gray-50 rounded-lg border space-y-3">
+                            <h4 class="font-semibold text-gray-800">Tambah Penjual Baru</h4>
+                            <div>
+                                <label for="new-seller-name" class="block text-sm font-medium text-gray-700">Nama Toko</label>
+                                <input type="text" id="new-seller-name" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <div>
+                                <label for="new-seller-username" class="block text-sm font-medium text-gray-700">Username</label>
+                                <input type="text" id="new-seller-username" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <div>
+                                <label for="new-seller-password" class="block text-sm font-medium text-gray-700">Password</label>
+                                <input type="text" id="new-seller-password" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition">Tambah Penjual</button>
+                        </form>
+                        <h4 class="font-semibold text-gray-800 mb-2">Daftar Penjual</h4>
+                        <div id="seller-list-admin" class="space-y-3">
+                            <!-- Seller list will be injected here -->
+                        </div>
+                        <h4 class="font-semibold text-gray-800 mb-2 mt-6 border-t pt-4">Daftar Siswa yang Login</h4>
+                        <div id="student-list-admin" class="space-y-3 max-h-40 overflow-y-auto pr-2">
+                            <!-- Student list will be injected here -->
+                        </div>
+                    </div>
+                    <!-- Card 2: Laporan Keuangan -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Laporan Keuangan</h3>
+                        <div id="overall-summary" class="space-y-3 mb-6 border-b pb-6">
+                            <div class="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                                <span class="font-bold text-gray-700">Total Penjualan Keseluruhan</span>
+                                <span id="grand-total-sales" class="font-bold text-lg text-gray-900">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-green-100 rounded-lg">
+                                <span class="font-bold text-green-800">Total Profit Keseluruhan (10%)</span>
+                                <span id="grand-total-profit" class="font-bold text-lg text-green-900">Rp 0</span>
+                            </div>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-700 mb-4">Rincian per Penjual</h4>
+                        <div id="seller-financials-list" class="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                            <!-- Seller financial details will be injected here -->
+                        </div>
+                    </div>
+                    <!-- Card 3: Produk Jualan -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Produk Jualan Penjual</h3>
+                        <div id="admin-view-menu-list" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                            <!-- Admin menu view will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Halaman Penjual (Hidden by default) -->
+        <div id="seller-page" class="hidden min-h-screen">
+            <!-- Header Penjual -->
+            <header class="bg-white shadow-md sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <!-- Logo -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                        <h1 id="seller-dashboard-title" class="text-2xl font-bold text-gray-800">Dasbor Penjual</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="seller-greeting" class="text-gray-600 font-medium hidden sm:block">Selamat Datang, Penjual!</span>
+                        <button id="logout-button-seller" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Logout</button>
+                    </div>
+                </div>
+            </header>
+            <!-- Konten Penjual -->
+            <main class="p-4 sm:p-6 lg:p-8 grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+                 <!-- Kolom Kiri -->
+                <div class="space-y-8">
+                    <!-- Card Profil Toko -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Profil Toko</h3>
+                        <div class="flex flex-col items-center space-y-4">
+                            <img id="seller-logo-preview" src="https://placehold.co/100x100/E2E8F0/4A5568?text=Logo" alt="Logo Toko" class="w-24 h-24 rounded-full object-cover border-4 border-gray-200">
+                            <div>
+                                <label for="seller-logo-upload" class="block text-sm font-medium text-gray-700 mb-2 text-center">Ganti Logo Toko</label>
+                                <input type="file" id="seller-logo-upload" class="w-full max-w-xs text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*">
+                            </div>
+                            <button id="save-logo-button" class="w-full max-w-xs bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition">Simpan Logo</button>
+                        </div>
+                    </div>
+                    <!-- Card Manajemen Menu -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <div id="add-menu-section" class="mb-8">
+                            <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Tambah Menu Baru</h3>
+                            <form id="add-menu-form" class="space-y-4">
+                                <div>
+                                    <label for="new-menu-name" class="block text-sm font-medium text-gray-700">Nama Menu</label>
+                                    <input type="text" id="new-menu-name" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                                </div>
+                                <div>
+                                    <label for="new-menu-price" class="block text-sm font-medium text-gray-700">Harga</label>
+                                    <input type="number" id="new-menu-price" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" required min="0">
+                                </div>
+                                <div>
+                                    <label for="new-menu-stock" class="block text-sm font-medium text-gray-700">Stok Awal</label>
+                                    <input type="number" id="new-menu-stock" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md" required min="0">
+                                </div>
+                                <div>
+                                    <label for="new-menu-image" class="block text-sm font-medium text-gray-700">Gambar Menu</label>
+                                    <input type="file" id="new-menu-image" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*" required>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition">Tambah Menu</button>
+                            </form>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Daftar Menu Saya</h3>
+                        <div id="seller-menu-list" class="space-y-6">
+                            <!-- Seller menu items will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Pesanan Masuk -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Pesanan Masuk</h3>
+                    <div id="seller-order-list" class="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+                        <p class="text-gray-500">Belum ada pesanan yang masuk.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modal Pembayaran -->
+        <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Konfirmasi Pembayaran</h2>
+                
+                <div class="mb-4 text-left">
+                    <label for="buyer-name-input" class="block text-sm font-medium text-gray-700 mb-1">Nama Pemesan</label>
+                    <input type="text" id="buyer-name-input" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Masukkan nama Anda" required>
+                    <p id="buyer-name-error" class="text-red-500 text-xs mt-1 hidden">Nama tidak boleh kosong.</p>
+                </div>
+
+                <p class="text-gray-600 mb-2">Total pesanan Anda:</p>
+                <p id="modal-total" class="text-3xl font-bold text-blue-600 mb-8">Rp 0</p>
+                <p class="text-sm text-gray-500 mb-6">Pilih metode pembayaran (simulasi):</p>
+                <div class="flex justify-center space-x-4 mb-8">
+                    <button class="flex-1 border-2 border-blue-500 text-blue-500 font-semibold py-2 rounded-lg">QRIS</button>
+                    <button class="flex-1 border border-gray-300 text-gray-600 font-semibold py-2 rounded-lg">E-Wallet</button>
+                </div>
+                <div class="space-y-3">
+                    <button id="confirm-payment-button" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition">Bayar Sekarang</button>
+                    <button id="cancel-payment-button" class="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition">Batal</button>
+                </div>
             </div>
         </div>
         
-        <!-- Notifikasi -->
-        <div id="notification" class="hidden notification">
-            Jadwal berhasil diperbarui!
+        <!-- Modal Tambah Keterangan -->
+        <div id="note-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8">
+                <h2 id="note-modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Keterangan</h2>
+                <p class="text-gray-600 mb-4">Tambahkan catatan khusus untuk pesanan ini (contoh: tidak pedas, banyak sayur).</p>
+                <textarea id="note-input" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Tulis keterangan di sini..."></textarea>
+                <div class="mt-6 space-y-3">
+                    <button id="confirm-add-to-cart-button" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition">Tambahkan ke Keranjang</button>
+                    <button id="cancel-add-to-cart-button" class="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition">Batal</button>
+                </div>
+            </div>
         </div>
+
+        <!-- Modal Konfirmasi Pesanan -->
+        <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden fade-in">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Pesanan Berhasil!</h2>
+                <p class="text-gray-600 mb-6">Terima kasih telah memesan. Pantau status pesanan Anda di samping.</p>
+                <button id="close-confirmation-button" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition">OK</button>
+            </div>
+        </div>
+
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            let sellers = [
+                { id: 1, name: 'Warung Bu Siti', username: 'penjual_a', password: '123', logo: 'https://placehold.co/100x100/A7F3D0/1E40AF?text=B.S' },
+                { id: 2, name: 'Kantin Pak Budi', username: 'penjual_b', password: '123', logo: 'https://placehold.co/100x100/BAE6FD/991B1B?text=P.B' }
+            ];
 
-        // Set Firebase log level for debugging purposes.
-        setLogLevel('debug');
+            let menuData = [
+                { id: 1, name: "Nasi Goreng", price: 15000, image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=800&auto=format&fit=crop", stock: 10, sellerId: 1 },
+                { id: 2, name: "Mie Ayam", price: 12000, image: "https://images.unsplash.com/photo-1668553114521-3d5f30335787?q=80&w=800&auto=format&fit=crop", stock: 8, sellerId: 1 },
+                { id: 3, name: "Soto Ayam", price: 13000, image: "https://images.unsplash.com/photo-1582576322476-78a001712a32?q=80&w=800&auto=format&fit=crop", stock: 0, sellerId: 1 },
+                { id: 4, name: "Bakso", price: 12000, image: "https://images.unsplash.com/photo-1599708453995-1c3f3b9786a3?q=80&w=800&auto=format&fit=crop", stock: 15, sellerId: 2 },
+                { id: 5, name: "Gado-Gado", price: 10000, image: "https://images.unsplash.com/photo-1626203494-118536f9a061?q=80&w=800&auto=format&fit=crop", stock: 5, sellerId: 2 },
+                { id: 6, name: "Ayam Bakar", price: 18000, image: "https://images.unsplash.com/photo-1626111197311-37d455433a0b?q=80&w=800&auto=format&fit=crop", stock: 7, sellerId: 1 },
+                { id: 7, name: "Es Teh Manis", price: 4000, image: "https://images.unsplash.com/photo-1556679343-c7306c8b9983?q=80&w=800&auto=format&fit=crop", stock: 20, sellerId: 2 },
+                { id: 8, name: "Jus Jeruk", price: 6000, image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=800&auto=format&fit=crop", stock: 0, sellerId: 2 },
+            ];
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            let cart = [];
+            let orders = [];
+            let loggedInUser = null;
+            let loggedInStudents = [];
+            let orderStatusInterval = null;
+            let currentItemIdForNote = null;
+            let selectedSellerId = null;
 
-        let app, auth, db;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            console.error("Error initializing Firebase:", e);
-        }
+            // --- DOM ELEMENTS ---
+            const loginPage = document.getElementById('login-page');
+            const mainPage = document.getElementById('main-page');
+            const adminPage = document.getElementById('admin-page');
+            const sellerPage = document.getElementById('seller-page');
+            const sellerSelectionPage = document.getElementById('seller-selection-page');
+            const loginForm = document.getElementById('login-form');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginError = document.getElementById('login-error');
+            const logoutButton = document.getElementById('logout-button');
+            const logoutButtonSelect = document.getElementById('logout-button-select');
+            const logoutButtonAdmin = document.getElementById('logout-button-admin');
+            const logoutButtonSeller = document.getElementById('logout-button-seller');
+            const menuContainer = document.getElementById('menu-container');
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartEmptyMessage = document.getElementById('cart-empty');
+            const cartSummary = document.getElementById('cart-summary');
+            const cartTotalElement = document.getElementById('cart-total');
+            const orderButton = document.getElementById('order-button');
+            const paymentModal = document.getElementById('payment-modal');
+            const modalTotalElement = document.getElementById('modal-total');
+            const confirmPaymentButton = document.getElementById('confirm-payment-button');
+            const cancelPaymentButton = document.getElementById('cancel-payment-button');
+            const confirmationModal = document.getElementById('confirmation-modal');
+            const closeConfirmationButton = document.getElementById('close-confirmation-button');
+            const orderListContainer = document.getElementById('order-list');
+            const sellerMenuListContainer = document.getElementById('seller-menu-list');
+            const sellerOrderListContainer = document.getElementById('seller-order-list');
+            const addMenuForm = document.getElementById('add-menu-form');
+            const adminViewMenuListContainer = document.getElementById('admin-view-menu-list');
+            const myOrdersList = document.getElementById('my-orders-list');
+            const myOrdersEmpty = document.getElementById('my-orders-empty');
+            const sellerListAdminContainer = document.getElementById('seller-list-admin');
+            const sellerDashboardTitle = document.getElementById('seller-dashboard-title');
+            const sellerGreeting = document.getElementById('seller-greeting');
+            const studentGreeting = document.getElementById('student-greeting');
+            const noteModal = document.getElementById('note-modal');
+            const noteModalTitle = document.getElementById('note-modal-title');
+            const noteInput = document.getElementById('note-input');
+            const confirmAddToCartButton = document.getElementById('confirm-add-to-cart-button');
+            const cancelAddToCartButton = document.getElementById('cancel-add-to-cart-button');
+            const sellerSelectionContainer = document.getElementById('seller-selection-container');
+            const mainPageTitle = document.getElementById('main-page-title');
+            const changeSellerButton = document.getElementById('change-seller-button');
+            const sellerLogoPreview = document.getElementById('seller-logo-preview');
+            const sellerLogoUpload = document.getElementById('seller-logo-upload');
+            const saveLogoButton = document.getElementById('save-logo-button');
+            const buyerNameInput = document.getElementById('buyer-name-input');
+            const buyerNameError = document.getElementById('buyer-name-error');
+            const addSellerForm = document.getElementById('add-seller-form');
+            const studentListAdminContainer = document.getElementById('student-list-admin');
 
-        const loginPage = document.getElementById('login-page');
-        const mainApp = document.getElementById('main-app');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const logoutBtn = document.getElementById('logout-btn');
-        const scheduleContainer = document.getElementById('schedule-container');
-        const editModal = document.getElementById('edit-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const pelajaranInput = document.getElementById('pelajaran-input');
-        const guruInput = document.getElementById('guru-input');
-        const startHourSelect = document.getElementById('start-hour-select');
-        const startMinuteSelect = document.getElementById('start-minute-select');
-        const endHourSelect = document.getElementById('end-hour-select');
-        const endMinuteSelect = document.getElementById('end-minute-select');
-        const saveBtn = document.getElementById('save-btn');
-        const cancelBtn = document.getElementById('cancel-btn');
-        const deleteBtn = document.getElementById('delete-btn');
-        const notificationElement = document.getElementById('notification');
-        const userIdDisplay = document.getElementById('user-id-display');
-        const appTitle = document.getElementById('app-title');
-        const editHint = document.getElementById('edit-hint'); // Petunjuk edit
+            // --- DATA PERSISTENCE ---
+            const saveState = () => {
+                localStorage.setItem('kantinDigitalSellers', JSON.stringify(sellers));
+                localStorage.setItem('kantinDigitalMenu', JSON.stringify(menuData));
+                localStorage.setItem('kantinDigitalOrders', JSON.stringify(orders));
+                localStorage.setItem('kantinDigitalStudents', JSON.stringify(loggedInStudents));
+            };
 
-        const loginForm = document.getElementById('login-form');
-        const usernameInput = document.getElementById('username-input');
-        const passwordInput = document.getElementById('password-input');
-        const loginError = document.getElementById('login-error');
-        
-        const classInput = document.getElementById('class-input');
-        const classList = document.getElementById('class-list');
-        const searchBtn = document.getElementById('search-btn');
+            const loadState = () => {
+                const savedSellers = localStorage.getItem('kantinDigitalSellers');
+                const savedMenu = localStorage.getItem('kantinDigitalMenu');
+                const savedOrders = localStorage.getItem('kantinDigitalOrders');
+                const savedStudents = localStorage.getItem('kantinDigitalStudents');
 
-        let currentScheduleRef, userId;
-        let scheduleData = {};
-        let userRole = null; // Tambahkan variabel untuk menyimpan peran pengguna: 'editor' atau 'student'
-        const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
-        const lessonsPerDay = 5;
-
-        // KREDENSIAL LOGIN:
-        const HARDCODED_CREDENTIALS = {
-            'ale': 'editor', // Admin/Editor
-            'siswa': 'student' // Siswa (Hanya lihat)
-        };
-        const HARDCODED_PASSWORD = '12345';
-
-        // Handler untuk form login
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = usernameInput.value;
-            const password = passwordInput.value;
-
-            if (HARDCODED_CREDENTIALS[username] && password === HARDCODED_PASSWORD) {
-                userRole = HARDCODED_CREDENTIALS[username]; // Set peran
-                loginError.classList.add('hidden');
-                loadingSpinner.classList.remove('hidden');
-                loginForm.classList.add('hidden');
-                
-                // Lanjutkan ke otentikasi Firebase
-                try {
-                    // Karena kita tidak memiliki token custom yang berbeda untuk setiap peran,
-                    // kita tetap menggunakan alur sign in standar, dan membedakan akses berdasarkan userRole lokal.
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (e) {
-                    console.error("Error signing in:", e);
-                    loadingSpinner.innerHTML = "<p>Gagal login. Silakan coba lagi.</p>";
-                    loginForm.classList.remove('hidden');
+                if (savedSellers) sellers = JSON.parse(savedSellers);
+                if (savedMenu) menuData = JSON.parse(savedMenu);
+                if (savedOrders) {
+                    orders = JSON.parse(savedOrders).map(order => ({
+                        ...order,
+                        timestamp: new Date(order.timestamp) // Convert string back to Date object
+                    }));
                 }
-            } else {
-                loginError.classList.remove('hidden');
-            }
-        });
+                if (savedStudents) loggedInStudents = JSON.parse(savedStudents);
+            };
+            
+            loadState(); // Load state from localStorage on startup
 
-        // Handler untuk logout
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                userRole = null; // Reset peran
-                // Setelah logout, tampilkan kembali halaman login
+            // --- FUNCTIONS ---
+
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+            };
+            
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                loginError.classList.add('hidden');
+
+                if (!username) {
+                    loginError.textContent = 'Username tidak boleh kosong.';
+                    loginError.classList.remove('hidden');
+                    return;
+                }
+
+                const showPage = (pageToShow) => {
+                    [loginPage, mainPage, adminPage, sellerPage, sellerSelectionPage].forEach(page => page.classList.add('hidden'));
+                    pageToShow.classList.remove('hidden');
+                    pageToShow.classList.add('fade-in');
+                };
+                
+                const seller = sellers.find(s => s.username === username && s.password === password);
+
+                if (username === 'admin' && password === 'admin123') {
+                    loggedInUser = { type: 'admin', username: 'admin' };
+                    showPage(adminPage);
+                    renderOrders();
+                    renderAdminViewMenu();
+                    renderFinancialReports();
+                    renderSellerListForAdmin();
+                    renderStudentListForAdmin();
+                } 
+                else if (seller) {
+                    loggedInUser = { type: 'penjual', ...seller };
+                    showPage(sellerPage);
+                    sellerDashboardTitle.textContent = `Dasbor ${loggedInUser.name}`;
+                    sellerGreeting.textContent = `Selamat Datang, ${loggedInUser.name}!`;
+                    sellerLogoPreview.src = loggedInUser.logo;
+                    renderSellerOrders();
+                    renderSellerMenu();
+                }
+                else if (password === '123') {
+                    loggedInUser = { type: 'siswa', username: username };
+                    
+                    if (!loggedInStudents.includes(username)) {
+                        loggedInStudents.push(username);
+                        saveState();
+                    }
+                    
+                    showPage(sellerSelectionPage);
+                    studentGreeting.textContent = `Halo, ${username}!`;
+                    renderSellerSelection();
+                    renderUserOrders();
+                    if (orderStatusInterval) clearInterval(orderStatusInterval);
+                    orderStatusInterval = setInterval(renderUserOrders, 3000);
+                }
+                else {
+                    loginError.textContent = 'Username atau password salah.';
+                    loginError.classList.remove('hidden');
+                }
+            };
+            
+            const handleLogout = () => {
+                if (orderStatusInterval) {
+                    clearInterval(orderStatusInterval);
+                    orderStatusInterval = null;
+                }
+                cart = [];
+                loggedInUser = null;
+                selectedSellerId = null;
+                [mainPage, adminPage, sellerPage, sellerSelectionPage].forEach(page => page.classList.add('hidden'));
                 loginPage.classList.remove('hidden');
-                mainApp.classList.add('hidden');
-                loginForm.classList.remove('hidden');
-                loadingSpinner.classList.add('hidden');
+                loginPage.classList.add('fade-in');
                 usernameInput.value = '';
                 passwordInput.value = '';
-            } catch (e) {
-                console.error("Error signing out:", e);
-            }
-        });
-        
-        // Fungsi untuk autentikasi dan muat data
-        onAuthStateChanged(auth, async (user) => {
-            if (user && userRole) { // Pastikan user dan role sudah diset
-                userId = user.uid;
-                userIdDisplay.textContent = `ID Pengguna: ${userId} (${userRole === 'editor' ? 'Editor' : 'Siswa'})`;
-                
-                // Atur judul dan petunjuk sesuai peran
-                if (userRole === 'editor') {
-                    appTitle.textContent = "Jadwal Pelajaran (Mode Editor)";
-                    editHint.classList.remove('hidden');
-                    // Sembunyikan/Tampilkan tombol modal
-                    saveBtn.classList.remove('hidden');
-                    deleteBtn.classList.remove('hidden');
-                } else {
-                    appTitle.textContent = "Halaman Siswa (Hanya Lihat)";
-                    editHint.classList.add('hidden');
-                    // Sembunyikan tombol modal untuk siswa
-                    saveBtn.classList.add('hidden');
-                    deleteBtn.classList.add('hidden');
-                }
-                
-                loadingSpinner.classList.add('hidden');
-                loginPage.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                
-                console.log("User authenticated. Role:", userRole);
-                await loadSchedule(userId);
-            } else {
-                // If not authenticated, ensure login page is shown
-                loginPage.classList.remove('hidden');
-                mainApp.classList.add('hidden');
-                loadingSpinner.classList.add('hidden');
-                loginForm.classList.remove('hidden');
-            }
-        });
-
-        // Load data from Firestore in real-time
-        async function loadSchedule(currentUserId) {
-            currentScheduleRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'schedules', 'my-schedule');
+                loginError.classList.add('hidden');
+            };
             
-            onSnapshot(currentScheduleRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    scheduleData = docSnap.data();
-                    console.log("Data loaded from Firestore:", scheduleData);
-                } else {
-                    console.log("No data found, initializing with dummy data.");
-                    scheduleData = createDummyData();
-                    // Hanya editor yang boleh menyimpan data awal
-                    if(userRole === 'editor') {
-                        setDoc(currentScheduleRef, scheduleData); 
+            const renderSellerSelection = () => {
+                sellerSelectionContainer.innerHTML = '';
+                sellers.forEach(seller => {
+                    const sellerCardHTML = `
+                        <div data-seller-id="${seller.id}" class="seller-select-card bg-white p-8 rounded-2xl shadow-lg cursor-pointer transform hover:scale-105 transition-transform duration-300 flex flex-col items-center text-center">
+                            <img src="${seller.logo}" alt="Logo ${seller.name}" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-gray-100">
+                            <h3 class="text-2xl font-bold text-gray-800">${seller.name}</h3>
+                            <p class="mt-2 text-gray-500">Klik untuk melihat menu</p>
+                        </div>
+                    `;
+                    sellerSelectionContainer.insertAdjacentHTML('beforeend', sellerCardHTML);
+                });
+            };
+
+            const handleSellerSelection = (sellerId) => {
+                selectedSellerId = sellerId;
+                const selectedSeller = sellers.find(s => s.id === sellerId);
+                
+                cart = [];
+                updateCart();
+
+                mainPageTitle.textContent = selectedSeller.name;
+                [loginPage, adminPage, sellerPage, sellerSelectionPage].forEach(page => page.classList.add('hidden'));
+                mainPage.classList.remove('hidden');
+                
+                renderMenu();
+            };
+            
+            const updateSellerLogo = () => {
+                const logoFile = sellerLogoUpload.files[0];
+                if (!logoFile) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const sellerToUpdate = sellers.find(s => s.id === loggedInUser.id);
+                    if (sellerToUpdate) {
+                        sellerToUpdate.logo = event.target.result;
+                        loggedInUser.logo = event.target.result;
+                        sellerLogoPreview.src = event.target.result;
+                        sellerLogoUpload.value = '';
+                        saveState();
                     }
+                };
+                reader.readAsDataURL(logoFile);
+            };
+
+            const renderMenu = () => {
+                if (!selectedSellerId) return;
+                
+                const menusToShow = menuData.filter(item => item.sellerId === selectedSellerId);
+                menuContainer.innerHTML = '';
+
+                if (menusToShow.length === 0) {
+                     menuContainer.innerHTML = `<p class="text-gray-500 md:col-span-3 text-center">Penjual ini belum memiliki menu.</p>`;
+                     return;
                 }
-                sortScheduleByTime(scheduleData);
-                renderSchedule();
-                populateClassDatalist();
-            }, (error) => {
-                console.error("Error getting real-time updates:", error);
-            });
-        }
 
-        // Fungsi baru untuk mengisi datalist kelas
-        function populateClassDatalist() {
-            classList.innerHTML = ''; // Kosongkan daftar sebelumnya
-            const classNames = Object.keys(scheduleData).sort();
-            classNames.forEach(className => {
-                const option = document.createElement('option');
-                option.value = className;
-                classList.appendChild(option);
-            });
-        }
+                menusToShow.forEach(item => {
+                    const seller = sellers.find(s => s.id === item.sellerId);
+                    const isOutOfStock = item.stock === 0;
+                    
+                    const buttonHTML = isOutOfStock
+                        ? `<button disabled class="mt-4 w-full bg-gray-200 text-gray-500 font-semibold py-2 rounded-lg cursor-not-allowed">Stok Habis</button>`
+                        : `<button data-id="${item.id}" class="add-to-cart-btn mt-4 w-full bg-blue-100 text-blue-700 font-semibold py-2 rounded-lg hover:bg-blue-200 transition">Tambah</button>`;
 
-        function createDummyData() {
-            return {
-                "Kelas 10A": {
-                    "Senin": [
-                        { pelajaran: "Matematika", guru: "Bapak Budi", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Fisika", guru: "Ibu Siti", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Bahasa Inggris", guru: "Bapak Alex", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Seni Rupa", guru: "Ibu Anisa", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Biologi", guru: "Bapak Candra", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Selasa": [
-                        { pelajaran: "Kimia", guru: "Ibu Desi", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Sejarah", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Geografi", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "TIK", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Rabu": [
-                        { pelajaran: "Ekonomi", guru: "Bapak Joko", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Sosiologi", guru: "Ibu Karina", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Prakarya", guru: "Bapak Lutfi", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Agama", guru: "Ibu Maya", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "PKN", guru: "Bapak Naufal", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Kamis": [
-                        { pelajaran: "Olahraga", guru: "Bapak Budi", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Bahasa Jerman", guru: "Ibu Siti", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Fisika", guru: "Bapak Alex", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Matematika", guru: "Ibu Anisa", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Kimia", guru: "Bapak Candra", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Jumat": [
-                        { pelajaran: "Biologi", guru: "Ibu Desi", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "TIK", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Seni Budaya", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Ekonomi", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ]
-                },
-                "Kelas 11A": {
-                    "Senin": [
-                        { pelajaran: "Matematika Lanjut", guru: "Bapak Rahmat", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Fisika Kuantum", guru: "Ibu Dewi", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Bahasa Inggris Lanjutan", guru: "Bapak Eko", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Biologi Sel", guru: "Ibu Fitri", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Kimia Organik", guru: "Bapak Gani", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Selasa": [
-                        { pelajaran: "Sejarah Dunia", guru: "Ibu Hani", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Sosiologi", guru: "Bapak Indra", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Kiki", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Geografi", guru: "Bapak Leo", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Ekonomi", guru: "Ibu Mira", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Rabu": [
-                        { pelajaran: "TIK", guru: "Bapak Nanda", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Pendidikan Agama", guru: "Ibu Oka", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Olahraga", guru: "Bapak Panca", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Prakarya", guru: "Ibu Qori", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "PKN", guru: "Bapak Rio", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Kamis": [
-                        { pelajaran: "Seni Musik", guru: "Ibu Sinta", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Matematika Lanjut", guru: "Bapak Taufik", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Fisika Kuantum", guru: "Ibu Vina", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Bahasa Inggris Lanjutan", guru: "Bapak Wahyu", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Biologi Sel", guru: "Ibu Yanti", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Jumat": [
-                        { pelajaran: "Kimia Organik", guru: "Bapak Zaki", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Sejarah Dunia", guru: "Ibu Ami", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Sosiologi", guru: "Bapak Bani", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Ekonomi", guru: "Ibu Cici", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "TIK", guru: "Bapak Dini", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ]
-                },
-                "Kelas 11B": {
-                    "Senin": [
-                        { pelajaran: "Kimia", guru: "Ibu Ela", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Sejarah", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Geografi", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "TIK", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Selasa": [
-                        { pelajaran: "Matematika", guru: "Bapak Joko", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Fisika", guru: "Ibu Karina", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Bahasa Inggris", guru: "Bapak Lutfi", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Seni Rupa", guru: "Ibu Maya", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Biologi", guru: "Bapak Naufal", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Rabu": [
-                        { pelajaran: "Ekonomi", guru: "Bapak Budi", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Sosiologi", guru: "Ibu Siti", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Prakarya", guru: "Bapak Alex", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Agama", guru: "Ibu Anisa", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "PKN", guru: "Bapak Candra", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Kamis": [
-                        { pelajaran: "Bahasa Jerman", guru: "Ibu Desi", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Fisika", guru: "Bapak Fajar", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Kimia", guru: "Ibu Gita", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Matematika", guru: "Bapak Hadi", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Olahraga", guru: "Ibu Ira", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Jumat": [
-                        { pelajaran: "Biologi", guru: "Bapak Joko", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "TIK", guru: "Ibu Karina", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Seni Budaya", guru: "Bapak Lutfi", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Ekonomi", guru: "Ibu Maya", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Bahasa Indonesia", guru: "Bapak Naufal", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ]
-                },
-                "Kelas 12A": {
-                    "Senin": [
-                        { pelajaran: "Sistem Informasi", guru: "Bapak Rio", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Struktur Data", guru: "Ibu Sinta", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Algoritma", guru: "Bapak Taufik", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Desain Grafis", guru: "Ibu Vina", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Jaringan Komputer", guru: "Bapak Wahyu", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Selasa": [
-                        { pelajaran: "Bahasa Jepang", guru: "Ibu Yanti", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Kimia", guru: "Bapak Zaki", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Fisika", guru: "Ibu Ami", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Matematika", guru: "Bapak Bani", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Biologi", guru: "Ibu Cici", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Rabu": [
-                        { pelajaran: "Pendidikan Vokasi", guru: "Bapak Dini", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Kewirausahaan", guru: "Ibu Ela", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Seni Rupa", guru: "Bapak Fajar", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Pendidikan Agama", guru: "Ibu Gita", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "PKN", guru: "Bapak Hadi", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Kamis": [
-                        { pelajaran: "Olahraga", guru: "Ibu Ira", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Ekonomi", guru: "Bapak Joko", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Sosiologi", guru: "Ibu Karina", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Geografi", guru: "Bapak Lutfi", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Sejarah", guru: "Ibu Maya", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ],
-                    "Jumat": [
-                        { pelajaran: "TIK", guru: "Bapak Naufal", jam_mulai: "07:30", jam_selesai: "08:15" },
-                        { pelajaran: "Seni Budaya", guru: "Ibu Anisa", jam_mulai: "08:15", jam_selesai: "09:00" },
-                        { pelajaran: "Prakarya", guru: "Bapak Candra", jam_mulai: "09:15", jam_selesai: "10:00" },
-                        { pelajaran: "Bahasa Indonesia", guru: "Ibu Desi", jam_mulai: "10:15", jam_selesai: "11:00" },
-                        { pelajaran: "Bahasa Inggris", guru: "Bapak Eko", jam_mulai: "11:15", jam_selesai: "12:00" }
-                    ]
+                    const stockBadgeHTML = isOutOfStock
+                        ? `<div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">HABIS</div>`
+                        : `<div class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">Stok: ${item.stock}</div>`;
+
+                    const menuItemHTML = `
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 relative">
+                            ${stockBadgeHTML}
+                            <img class="w-full h-32 object-cover ${isOutOfStock ? 'filter grayscale' : ''}" src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Gambar+Error';">
+                            <div class="p-4">
+                                <h3 class="font-semibold text-lg text-gray-800">${item.name}</h3>
+                                <p class="text-gray-600 mt-1">${formatCurrency(item.price)}</p>
+                                ${buttonHTML}
+                            </div>
+                        </div>
+                    `;
+                    menuContainer.insertAdjacentHTML('beforeend', menuItemHTML);
+                });
+            };
+
+            const openNoteModal = (itemId) => {
+                const itemData = menuData.find(i => i.id === itemId);
+                const itemsInCartCount = cart.filter(i => i.id === itemId).length;
+
+                if (itemsInCartCount >= itemData.stock) {
+                    console.warn("Stok tidak mencukupi untuk item ini.");
+                    return;
+                }
+                
+                currentItemIdForNote = itemId;
+                noteModalTitle.textContent = `Keterangan untuk ${itemData.name}`;
+                noteInput.value = '';
+                noteModal.classList.remove('hidden');
+            };
+
+            const closeNoteModal = () => {
+                noteModal.classList.add('hidden');
+            };
+            
+            const addToCartWithNote = () => {
+                const itemToAdd = menuData.find(item => item.id === currentItemIdForNote);
+                if (!itemToAdd) return;
+
+                const itemsInCartCount = cart.filter(i => i.id === currentItemIdForNote).length;
+                if (itemsInCartCount >= itemToAdd.stock) {
+                     console.error("Stock limit reached for this item.");
+                     closeNoteModal();
+                     return;
+                }
+                
+                const note = noteInput.value.trim();
+
+                cart.push({
+                    ...itemToAdd,
+                    cartItemId: Date.now(),
+                    quantity: 1,
+                    note: note,
+                });
+
+                updateCart();
+                closeNoteModal();
+            };
+            
+            const removeFromCart = (cartItemId) => {
+                cart = cart.filter(item => item.cartItemId !== cartItemId);
+                updateCart();
+            };
+
+            const updateCart = () => {
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '';
+                    cartEmptyMessage.classList.remove('hidden');
+                    cartSummary.classList.add('hidden');
+                } else {
+                    cartEmptyMessage.classList.add('hidden');
+                    cartSummary.classList.remove('hidden');
+                    cartItemsContainer.innerHTML = '';
+                    cart.forEach(item => {
+                         const noteHTML = item.note ? `<p class="text-xs text-gray-500 italic pl-2 mt-1 border-l-2 border-gray-300">"${item.note}"</p>` : '';
+                
+                        const cartItemHTML = `
+                            <div class="flex justify-between items-start py-2 border-b last:border-b-0">
+                                <div class="flex-grow pr-2">
+                                    <p class="font-semibold text-gray-800">${item.name}</p>
+                                    <p class="text-sm text-gray-500">${formatCurrency(item.price)}</p>
+                                    ${noteHTML}
+                                </div>
+                                <div class="flex items-center pl-2">
+                                    <button data-cart-item-id="${item.cartItemId}" class="remove-cart-item-btn text-red-500 hover:text-red-700 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        cartItemsContainer.insertAdjacentHTML('beforeend', cartItemHTML);
+                    });
+                }
+                
+                const total = cart.reduce((sum, item) => sum + item.price, 0);
+                cartTotalElement.textContent = formatCurrency(total);
+                modalTotalElement.textContent = formatCurrency(total);
+            };
+
+            const openPaymentModal = () => {
+                if (cart.length > 0) {
+                    buyerNameInput.value = loggedInUser.username;
+                    buyerNameError.classList.add('hidden');
+                    paymentModal.classList.remove('hidden');
                 }
             };
-        }
-        
-        function sortScheduleByTime(schedule) {
-            for (const className in schedule) {
-                if (schedule.hasOwnProperty(className)) {
-                    for (const day in schedule[className]) {
-                        if (schedule[className].hasOwnProperty(day) && Array.isArray(schedule[className][day])) {
-                            schedule[className][day].sort((a, b) => {
-                                const [h1, m1] = a.jam_mulai.split(':').map(Number);
-                                const [h2, m2] = b.jam_mulai.split(':').map(Number);
-                                if (h1 !== h2) {
-                                    return h1 - h2;
-                                }
-                                return m1 - m2;
-                            });
-                        }
+
+            const closePaymentModal = () => {
+                paymentModal.classList.add('hidden');
+            };
+
+            const processPayment = () => {
+                const buyerName = buyerNameInput.value.trim();
+                if (!buyerName) {
+                    buyerNameError.classList.remove('hidden');
+                    return;
+                }
+                buyerNameError.classList.add('hidden');
+
+                cart.forEach(cartItem => {
+                    const menuItem = menuData.find(item => item.id === cartItem.id);
+                    if (menuItem) {
+                        menuItem.stock -= 1;
                     }
-                }
-            }
-        }
+                });
+                
+                const newOrder = {
+                    id: new Date().getTime(),
+                    items: [...cart],
+                    total: cart.reduce((sum, item) => sum + item.price, 0),
+                    userAccount: loggedInUser.username,
+                    namaPemesan: buyerName,
+                    timestamp: new Date(),
+                    status: 'Baru'
+                };
+                orders.push(newOrder);
+                
+                saveState();
 
-        // Fungsi utama untuk merender jadwal
-        function renderSchedule() {
-            // Dapatkan nama-nama kelas dan urutkan secara alfabetis
-            const classNames = Object.keys(scheduleData).sort();
+                renderOrders();
+                renderFinancialReports();
+                renderSellerOrders();
+                renderMenu();
+                renderSellerMenu();
+                renderUserOrders();
+
+                closePaymentModal();
+                confirmationModal.classList.remove('hidden');
+                cart = [];
+                updateCart();
+            };
             
-            // Render setiap tabel kelas secara terpisah
-            classNames.forEach(className => {
-                renderClassTable(className);
-            });
+            const closeConfirmation = () => {
+                confirmationModal.classList.add('hidden');
+            };
 
-            // Hapus tabel yang tidak lagi ada
-            const existingCards = document.querySelectorAll('.class-card');
-            existingCards.forEach(card => {
-                const className = card.dataset.className;
-                if (!scheduleData.hasOwnProperty(className)) {
-                    card.remove();
+            const renderUserOrders = () => {
+                if (!loggedInUser || loggedInUser.type !== 'siswa') return;
+                const userOrders = orders.filter(order => order.userAccount === loggedInUser.username && order.status !== 'Selesai');
+                
+                if (userOrders.length === 0) {
+                    myOrdersList.innerHTML = '';
+                    myOrdersEmpty.classList.remove('hidden');
+                    return;
                 }
-            });
 
-            // Tambahkan event listener setelah semua elemen dirender
-            addEventListeners();
-        }
+                myOrdersEmpty.classList.add('hidden');
+                myOrdersList.innerHTML = '';
 
-        // Fungsi untuk merender atau memperbarui tabel untuk satu kelas
-        function renderClassTable(className) {
-            const classData = scheduleData[className];
-            let classCard = document.getElementById(`card-${className}`);
-
-            // Jika kartu kelas belum ada, buat yang baru
-            if (!classCard) {
-                classCard = document.createElement('div');
-                classCard.id = `card-${className}`;
-                classCard.dataset.className = className;
-                classCard.className = 'card class-card';
-                classCard.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-4 text-center text-amber-800">${className}</h2>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left rounded-lg overflow-hidden border border-gray-300">
-                            <thead class="bg-amber-700 text-gray-100 font-['Shadows_Into_Light']">
-                                <tr>
-                                    <th class="py-2 px-4 border-b-2 border-amber-600">Pelajaran</th>
-                                    ${daysOfWeek.map(day => `<th class="py-2 px-4 border-b-2 border-amber-600 text-center">${day}</th>`).join('')}
-                                </tr>
-                            </thead>
-                            <tbody id="schedule-body-${className}">
-                                <!-- Baris jadwal akan dirender di sini -->
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                // Temukan posisi yang benar untuk menyisipkan kartu baru
-                const classNames = Object.keys(scheduleData).sort();
-                const index = classNames.indexOf(className);
-                if (index > 0) {
-                    const prevClassName = classNames[index - 1];
-                    const prevCard = document.getElementById(`card-${prevClassName}`);
-                    if (prevCard) {
-                        prevCard.insertAdjacentElement('afterend', classCard);
+                userOrders.sort((a, b) => b.id - a.id).forEach(order => {
+                    let statusClass, statusText;
+                    if (order.status === 'Siap Diambil') {
+                        statusClass = 'bg-green-100 text-green-800';
+                        statusText = 'Siap Diambil';
                     } else {
-                        scheduleContainer.appendChild(classCard);
+                        statusClass = 'bg-yellow-100 text-yellow-800';
+                        statusText = 'Diproses';
                     }
-                } else {
-                    scheduleContainer.prepend(classCard);
-                }
-            }
-            
-            // Perbarui konten tbody
-            const tbody = document.getElementById(`schedule-body-${className}`);
-            tbody.innerHTML = '';
-            for (let i = 0; i < lessonsPerDay; i++) {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-amber-100 transition-colors';
-                row.innerHTML = `<td class="py-2 px-4 border-t border-gray-300 font-bold text-gray-600">Pelajaran ${i + 1}</td>`;
+
+                    const orderHTML = `
+                        <div class="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
+                            <div>
+                                <p class="text-sm font-medium text-gray-700">Pesanan #${order.id.toString().slice(-5)}</p>
+                                <p class="text-xs text-gray-500">a/n ${order.namaPemesan}</p>
+                            </div>
+                            <span class="status-badge text-xs font-bold px-2 py-1 rounded-full ${statusClass}">${statusText}</span>
+                        </div>
+                    `;
+                    myOrdersList.insertAdjacentHTML('beforeend', orderHTML);
+                });
+            };
+
+            const renderFinancialReports = () => {
+                const grandTotalSalesEl = document.getElementById('grand-total-sales');
+                const grandTotalProfitEl = document.getElementById('grand-total-profit');
+                const sellerFinancialsListEl = document.getElementById('seller-financials-list');
+
+                let grandTotalSales = 0;
+                sellerFinancialsListEl.innerHTML = '';
+
+                sellers.forEach(seller => {
+                    let sellerTotalSales = 0;
+                    orders.forEach(order => {
+                        order.items.forEach(item => {
+                            if (item.sellerId === seller.id) {
+                                sellerTotalSales += item.price * item.quantity;
+                            }
+                        });
+                    });
+
+                    grandTotalSales += sellerTotalSales;
+                    const sellerProfit = sellerTotalSales * 0.10;
+
+                    const sellerFinancialsHTML = `
+                        <div class="p-4 bg-gray-50 rounded-lg border">
+                            <p class="font-bold text-gray-800 mb-2">${seller.name}</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Total Penjualan</span>
+                                    <span class="font-medium text-gray-800">${formatCurrency(sellerTotalSales)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-green-700">Kontribusi Profit</span>
+                                    <span class="font-medium text-green-800">${formatCurrency(sellerProfit)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    sellerFinancialsListEl.insertAdjacentHTML('beforeend', sellerFinancialsHTML);
+                });
                 
-                daysOfWeek.forEach(day => {
-                    const lesson = classData[day]?.[i];
-                    const cell = document.createElement('td');
-                    cell.className = 'py-2 px-4 border-t border-gray-300 text-center editable-cell';
-                    // Tambahkan kelas khusus jika pengguna adalah editor
-                    if(userRole === 'editor') {
-                         cell.classList.add('editor-mode-cell');
-                    }
-                    cell.dataset.className = className;
-                    cell.dataset.day = day;
-                    cell.dataset.lessonIndex = i;
-                    cell.innerHTML = lesson ? `
-                        <div class="font-bold text-gray-800">${lesson.pelajaran}</div>
-                        <div class="text-xs text-gray-600">(${lesson.guru})</div>
-                        <div class="text-xs text-gray-500">${lesson.jam_mulai} - ${lesson.jam_selesai}</div>
-                    ` : '<div class="text-gray-400 text-sm">Kosong</div>';
-                    row.appendChild(cell);
+                if (sellers.length === 0) {
+                    sellerFinancialsListEl.innerHTML = '<p class="text-gray-500">Belum ada penjual.</p>';
+                }
+
+                const grandTotalProfit = grandTotalSales * 0.10;
+                
+                if (grandTotalSalesEl) grandTotalSalesEl.textContent = formatCurrency(grandTotalSales);
+                if (grandTotalProfitEl) grandTotalProfitEl.textContent = formatCurrency(grandTotalProfit);
+            };
+
+            const renderSellerListForAdmin = () => {
+                sellerListAdminContainer.innerHTML = '';
+                sellers.forEach(seller => {
+                    const sellerHTML = `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <p class="font-semibold text-gray-800">${seller.name}</p>
+                            <p class="text-sm text-gray-500">${seller.username}</p>
+                        </div>
+                    `;
+                    sellerListAdminContainer.insertAdjacentHTML('beforeend', sellerHTML);
                 });
-                tbody.appendChild(row);
-            }
-        }
-
-        function showEditModal(className, day, lessonIndex) {
-            // Jika peran adalah siswa, jangan tampilkan modal
-            if (userRole !== 'editor') return;
-
-            const lessonData = scheduleData[className]?.[day]?.[lessonIndex];
-            
-            modalTitle.textContent = `Tulis Jadwal - ${day} | Pelajaran ${lessonIndex + 1}`;
-            pelajaranInput.value = lessonData?.pelajaran || '';
-            guruInput.value = lessonData?.guru || '';
-            
-            const createTimeOptions = (selectElement) => {
-                selectElement.innerHTML = '';
-                for (let i = 0; i < 24; i++) {
-                    const option = document.createElement('option');
-                    option.value = i.toString().padStart(2, '0');
-                    option.textContent = i.toString().padStart(2, '0');
-                    selectElement.appendChild(option);
-                }
-            };
-
-            const createMinuteOptions = (selectElement) => {
-                selectElement.innerHTML = '';
-                for (let i = 0; i < 60; i += 5) {
-                    const option = document.createElement('option');
-                    option.value = i.toString().padStart(2, '0');
-                    option.textContent = i.toString().padStart(2, '0');
-                    selectElement.appendChild(option);
-                }
             };
             
-            createTimeOptions(startHourSelect);
-            createMinuteOptions(startMinuteSelect);
-            createTimeOptions(endHourSelect);
-            createMinuteOptions(endMinuteSelect);
-
-            const [startHour, startMinute] = (lessonData?.jam_mulai || '00:00').split(':').map(Number);
-            startHourSelect.value = startHour.toString().padStart(2, '0');
-            startMinuteSelect.value = startMinute.toString().padStart(2, '0');
-            
-            const [endHour, endMinute] = (lessonData?.jam_selesai || '00:00').split(':').map(Number);
-            endHourSelect.value = endHour.toString().padStart(2, '0');
-            endMinuteSelect.value = endMinute.toString().padStart(2, '0');
-
-            editModal.dataset.className = className;
-            editModal.dataset.day = day;
-            editModal.dataset.lessonIndex = lessonIndex;
-            editModal.classList.remove('hidden');
-            pelajaranInput.focus();
-        }
-
-        function hideEditModal() {
-            editModal.classList.add('hidden');
-        }
-
-        function showNotification(message = "Jadwal berhasil diperbarui!") {
-            notificationElement.textContent = message;
-            notificationElement.classList.remove('hidden');
-            setTimeout(() => {
-                notificationElement.classList.add('hidden');
-            }, 3000);
-        }
-
-        async function saveEdit() {
-            if (userRole !== 'editor') return; // Pastikan hanya editor yang bisa menyimpan
-            
-            const className = editModal.dataset.className;
-            const day = editModal.dataset.day;
-            const lessonIndex = editModal.dataset.lessonIndex;
-
-            const newPelajaran = pelajaranInput.value;
-            const newGuru = guruInput.value;
-            const newStartJam = `${startHourSelect.value}:${startMinuteSelect.value}`;
-            const newEndJam = `${endHourSelect.value}:${endMinuteSelect.value}`;
-
-            if (!scheduleData[className][day]) {
-                scheduleData[className][day] = [];
-            }
-            
-            scheduleData[className][day][lessonIndex] = {
-                pelajaran: newPelajaran,
-                guru: newGuru,
-                jam_mulai: newStartJam,
-                jam_selesai: newEndJam
-            };
-
-            sortScheduleByTime(scheduleData);
-
-            try {
-                await setDoc(currentScheduleRef, scheduleData, { merge: true });
-                console.log("Data successfully saved to Firestore.");
-                showNotification(); 
-            } catch (e) {
-                console.error("Error saving data:", e);
-                showNotification("Gagal menyimpan jadwal!");
-            }
-
-            hideEditModal();
-        }
-
-        async function deleteLesson() {
-            if (userRole !== 'editor') return; // Pastikan hanya editor yang bisa menghapus
-
-            const className = editModal.dataset.className;
-            const day = editModal.dataset.day;
-            const lessonIndex = editModal.dataset.lessonIndex;
-
-            if (scheduleData[className] && scheduleData[className][day]) {
-                scheduleData[className][day].splice(lessonIndex, 1);
-
-                try {
-                    await setDoc(currentScheduleRef, scheduleData, { merge: true });
-                    console.log("Lesson successfully deleted from Firestore.");
-                    showNotification("Pelajaran berhasil dihapus!");
-                } catch (e) {
-                    console.error("Error deleting data:", e);
-                    showNotification("Gagal menghapus pelajaran!");
+            const renderStudentListForAdmin = () => {
+                studentListAdminContainer.innerHTML = '';
+                if (loggedInStudents.length === 0) {
+                    studentListAdminContainer.innerHTML = '<p class="text-gray-500 text-sm">Belum ada siswa yang login.</p>';
+                    return;
                 }
-            }
-            hideEditModal();
-        }
-
-        function addEventListeners() {
-            // Hapus semua listener sebelumnya untuk menghindari duplikasi
-            document.querySelectorAll('.editable-cell').forEach(cell => {
-                cell.removeEventListener('click', handleCellClick);
-            });
-
-            // Hanya tambahkan listener jika peran adalah editor
-            if (userRole === 'editor') {
-                document.querySelectorAll('.editor-mode-cell').forEach(cell => {
-                    cell.addEventListener('click', handleCellClick);
+                
+                loggedInStudents.forEach(studentName => {
+                    const studentHTML = `
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                            <p class="font-medium text-gray-800">${studentName}</p>
+                        </div>
+                    `;
+                    studentListAdminContainer.insertAdjacentHTML('beforeend', studentHTML);
                 });
-            }
-        }
-        
-        // Fungsi handler terpisah untuk dapat dihapus
-        function handleCellClick() {
-            const classCard = this.closest('.class-card');
+            };
             
-            // Hapus animasi highlight dari kartu saat sel diklik
-            if (classCard && classCard.classList.contains('highlight')) {
-                classCard.classList.remove('highlight');
-            }
-
-            const className = this.dataset.className;
-            const day = this.dataset.day;
-            const lessonIndex = this.dataset.lessonIndex;
-            showEditModal(className, day, lessonIndex);
-        }
-        
-        saveBtn.addEventListener('click', saveEdit);
-        cancelBtn.addEventListener('click', hideEditModal);
-        deleteBtn.addEventListener('click', deleteLesson);
-        
-        editModal.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && userRole === 'editor') {
+            const addNewSeller = (e) => {
                 e.preventDefault();
-                saveEdit();
-            }
-        });
-        
-        // --- Logika Pencarian ---
-        searchBtn.addEventListener('click', searchAndHighlight);
-        classInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                searchAndHighlight();
-            }
-        });
-        
-        function searchAndHighlight() {
-            const query = classInput.value.toLowerCase().trim();
-            if (!query) return;
+                const nameInput = document.getElementById('new-seller-name');
+                const usernameInput = document.getElementById('new-seller-username');
+                const passwordInput = document.getElementById('new-seller-password');
 
-            // Hapus highlight sebelumnya
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+                const name = nameInput.value.trim();
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value.trim();
+
+                if (!name || !username || !password) {
+                    alert('Semua kolom harus diisi.');
+                    return;
+                }
+
+                if (sellers.some(s => s.username === username)) {
+                    alert('Username sudah digunakan. Harap pilih username lain.');
+                    return;
+                }
+
+                const newSeller = {
+                    id: new Date().getTime(),
+                    name: name,
+                    username: username,
+                    password: password,
+                    logo: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2).toUpperCase()}`
+                };
+
+                sellers.push(newSeller);
+                saveState();
+                addSellerForm.reset();
+                renderSellerListForAdmin();
+                renderFinancialReports();
+                renderAdminViewMenu();
+            };
+
+            const renderAdminViewMenu = () => {
+                adminViewMenuListContainer.innerHTML = '';
+                if (menuData.length === 0) {
+                    adminViewMenuListContainer.innerHTML = '<p class="text-gray-500">Belum ada produk yang dijual.</p>';
+                    return;
+                }
+                
+                sellers.forEach(seller => {
+                    const sellerMenus = menuData.filter(menu => menu.sellerId === seller.id);
+                    if (sellerMenus.length > 0) {
+                        adminViewMenuListContainer.innerHTML += `<h4 class="font-bold text-md text-gray-600 mt-4 mb-2">${seller.name}</h4>`;
+                        sellerMenus.forEach(item => {
+                            const menuItemHTML = `
+                                <div class="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
+                                    <div class="flex items-center space-x-3">
+                                        <img src="${item.image}" alt="${item.name}" class="w-12 h-12 rounded-md object-cover">
+                                        <div>
+                                            <p class="font-semibold text-gray-800">${item.name}</p>
+                                            <p class="text-sm text-gray-500">${formatCurrency(item.price)}</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Stok: ${item.stock}</span>
+                                </div>
+                            `;
+                            adminViewMenuListContainer.insertAdjacentHTML('beforeend', menuItemHTML);
+                        });
+                    }
+                });
+            };
             
-            // Cari kecocokan
-            let foundElement = null;
+            const addNewMenu = (e) => {
+                e.preventDefault();
+                const name = document.getElementById('new-menu-name').value.trim();
+                const price = parseInt(document.getElementById('new-menu-price').value, 10);
+                const stock = parseInt(document.getElementById('new-menu-stock').value, 10);
+                const imageFile = document.getElementById('new-menu-image').files[0];
 
-            // 1. Cari kelas
-            for (const className of Object.keys(scheduleData)) {
-                if (className.toLowerCase().includes(query)) {
-                    const card = document.getElementById(`card-${className}`);
-                    if (card) {
-                        foundElement = card;
-                        break;
+                if (!name || isNaN(price) || isNaN(stock) || !imageFile) {
+                    alert('Harap isi semua kolom dengan benar.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const newMenuItem = {
+                        id: new Date().getTime(),
+                        name: name, price: price, stock: stock,
+                        image: event.target.result,
+                        sellerId: loggedInUser.id
+                    };
+                    menuData.push(newMenuItem);
+                    saveState();
+                    addMenuForm.reset();
+                    renderSellerMenu();
+                    renderMenu();
+                    renderAdminViewMenu();
+                };
+                reader.readAsDataURL(imageFile);
+            };
+
+            const renderSellerMenu = () => {
+                sellerMenuListContainer.innerHTML = '';
+                const myMenus = menuData.filter(item => item.sellerId === loggedInUser.id);
+                
+                if (myMenus.length === 0) {
+                    sellerMenuListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Anda belum menambahkan menu.</p>';
+                }
+
+                myMenus.forEach(item => {
+                    const sellerMenuItemHTML = `
+                        <div class="p-4 border rounded-lg bg-gray-50 space-y-3">
+                             <div class="space-y-2">
+                                <label for="name-${item.id}" class="text-sm font-medium text-gray-700">Nama Menu:</label>
+                                <input type="text" id="name-${item.id}" class="w-full px-2 py-1 border border-gray-300 rounded-md" value="${item.name}">
+                            </div>
+                             <div class="space-y-2">
+                                <label for="price-${item.id}" class="text-sm font-medium text-gray-700">Harga:</label>
+                                <input type="number" id="price-${item.id}" class="w-full px-2 py-1 border border-gray-300 rounded-md" value="${item.price}" min="0">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <label for="stock-${item.id}" class="text-sm font-medium text-gray-700">Jumlah Stok:</label>
+                                <input type="number" id="stock-${item.id}" class="w-20 px-2 py-1 border border-gray-300 rounded-md" value="${item.stock}" min="0">
+                            </div>
+                            <div class="flex flex-col space-y-2">
+                                <label for="image-${item.id}" class="text-sm font-medium text-gray-700">Ganti Gambar:</label>
+                                <div class="flex items-center space-x-4">
+                                    <img src="${item.image}" alt="Preview" class="w-16 h-16 rounded-md object-cover">
+                                    <input type="file" id="image-${item.id}" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept="image/*">
+                                </div>
+                            </div>
+                            <button data-id="${item.id}" class="update-menu-btn text-sm w-full font-semibold py-2 px-3 rounded-lg transition bg-blue-600 text-white hover:bg-blue-700">
+                                Simpan Perubahan
+                            </button>
+                        </div>
+                    `;
+                    sellerMenuListContainer.insertAdjacentHTML('beforeend', sellerMenuItemHTML);
+                });
+            };
+
+            const updateMenuItem = (itemId) => {
+                const item = menuData.find(item => item.id === itemId);
+                if (item) {
+                    const nameInput = document.getElementById(`name-${itemId}`);
+                    const priceInput = document.getElementById(`price-${itemId}`);
+                    const stockInput = document.getElementById(`stock-${itemId}`);
+                    const imageInput = document.getElementById(`image-${itemId}`);
+                    
+                    item.name = nameInput.value.trim() || item.name;
+                    item.price = parseInt(priceInput.value, 10) || item.price;
+                    item.stock = parseInt(stockInput.value, 10);
+                    if (isNaN(item.stock)) item.stock = 0;
+
+
+                    if (imageInput.files && imageInput.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            item.image = e.target.result;
+                            saveState();
+                            renderSellerMenu(); renderMenu(); renderAdminViewMenu();
+                        };
+                        reader.readAsDataURL(imageInput.files[0]);
+                    } else {
+                        saveState();
+                        renderSellerMenu(); renderMenu(); renderAdminViewMenu();
                     }
                 }
-            }
-
-            if (foundElement) {
-                foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                foundElement.classList.add('highlight');
-            } else {
-                showNotification("Tidak ditemukan hasil untuk pencarian Anda.");
-            }
-        }
-        
-        // Polyfill matches (untuk mendukung closest)
-        if (!Element.prototype.matches) {
-            Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
-        }
-
-        if (!Element.prototype.closest) {
-            Element.prototype.closest = function (s) {
-                let el = this;
-                do {
-                    if (el.matches(s)) return el;
-                    el = el.parentElement || el.parentNode;
-                } while (el !== null && el.nodeType === 1);
-                return null;
             };
-        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('td div').forEach(el => {
-                if (el.textContent.includes('Matematika')) {
-                    el.classList.add('text-blue-600');
+            const renderOrders = () => {
+                if (orders.length === 0) {
+                    orderListContainer.innerHTML = '<p class="text-gray-500">Belum ada pesanan yang masuk.</p>';
+                    return;
+                } 
+                orderListContainer.innerHTML = '';
+                const sortedOrders = [...orders].sort((a, b) => b.id - a.id);
+                sortedOrders.forEach(order => {
+                    const itemsSummary = order.items.map(item => {
+                        const seller = sellers.find(s => s.id === item.sellerId);
+                        const noteText = item.note ? ` <i class="text-gray-500">(${item.note})</i>` : '';
+                        return `${item.name} (x1) [${seller.name}]${noteText}`;
+                    }).join('<br>');
+                    
+                    let statusClass;
+                    if (order.status === 'Siap Diambil') statusClass = 'bg-green-100 text-green-800';
+                    else if (order.status === 'Selesai') statusClass = 'bg-gray-200 text-gray-700';
+                    else statusClass = 'bg-yellow-100 text-yellow-800';
+
+                    const orderHTML = `
+                        <div class="border p-4 rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-gray-800">Pesanan #${order.id.toString().slice(-5)}</p>
+                                    <span class="text-xs text-gray-500">${order.timestamp.toLocaleString('id-ID')}</span>
+                                </div>
+                                <span class="text-xs font-bold px-2 py-1 rounded-full ${statusClass}">${order.status}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">Pemesan: <span class="font-medium text-gray-900">${order.namaPemesan}</span></p>
+                            <div class="text-sm text-gray-800 mt-1">Item: ${itemsSummary}</div>
+                            <p class="font-semibold text-blue-600 mt-2">Total: ${formatCurrency(order.total)}</p>
+                        </div>`;
+                    orderListContainer.insertAdjacentHTML('beforeend', orderHTML);
+                });
+            };
+
+            const renderSellerOrders = () => {
+                const myOrders = orders.filter(order => order.items.some(item => item.sellerId === loggedInUser.id) && order.status !== 'Selesai');
+
+                if (myOrders.length === 0) {
+                    sellerOrderListContainer.innerHTML = '<p class="text-gray-500">Belum ada pesanan yang masuk.</p>';
+                    return;
+                }
+
+                sellerOrderListContainer.innerHTML = '';
+                const sortedOrders = myOrders.sort((a, b) => b.id - a.id);
+                sortedOrders.forEach(order => {
+                    const myItemsInOrder = order.items.filter(item => item.sellerId === loggedInUser.id);
+                    const itemsSummary = myItemsInOrder.map(item => {
+                        const noteText = item.note ? ` <i class="text-gray-500">(${item.note})</i>` : '';
+                        return `${item.name} (x1)${noteText}`;
+                    }).join('<br>');
+                    
+                    let buttonHTML;
+                    if (order.status === 'Baru') {
+                        buttonHTML = `<button data-id="${order.id}" class="complete-order-btn w-full mt-3 py-2 px-4 rounded-lg bg-green-500 text-white hover:bg-green-600 transition">Tandai Siap Diambil</button>`;
+                    } else if (order.status === 'Siap Diambil') {
+                        buttonHTML = `<button data-id="${order.id}" class="confirm-pickup-btn w-full mt-3 py-2 px-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">Konfirmasi Pengambilan</button>`;
+                    }
+
+                    const orderHTML = `
+                        <div class="border p-4 rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-center">
+                                <p class="font-bold text-gray-800">Pesanan #${order.id.toString().slice(-5)}</p>
+                                <span class="text-sm text-gray-500">${order.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            <div class="text-sm text-gray-800 mt-2">Item: ${itemsSummary}</div>
+                            <p class="text-sm text-gray-600">Pemesan: ${order.namaPemesan}</p>
+                            ${buttonHTML}
+                        </div>`;
+                    sellerOrderListContainer.insertAdjacentHTML('beforeend', orderHTML);
+                });
+            };
+
+            const completeOrder = (orderId) => {
+                const order = orders.find(o => o.id === orderId);
+                if (order) {
+                    order.status = 'Siap Diambil';
+                    saveState();
+                    renderSellerOrders();
+                    renderOrders();
+                }
+            };
+
+            const confirmPickup = (orderId) => {
+                const order = orders.find(o => o.id === orderId);
+                if (order) {
+                    order.status = 'Selesai';
+                    saveState();
+                    renderSellerOrders();
+                    renderOrders();
+                }
+            };
+
+            // --- EVENT LISTENERS ---
+            loginForm.addEventListener('submit', handleLogin);
+            logoutButton.addEventListener('click', handleLogout);
+            logoutButtonSelect.addEventListener('click', handleLogout);
+            logoutButtonAdmin.addEventListener('click', handleLogout);
+            logoutButtonSeller.addEventListener('click', handleLogout);
+            addMenuForm.addEventListener('submit', addNewMenu);
+            saveLogoButton.addEventListener('click', updateSellerLogo);
+            addSellerForm.addEventListener('submit', addNewSeller);
+
+            menuContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('add-to-cart-btn')) {
+                    const itemId = parseInt(e.target.dataset.id);
+                    openNoteModal(itemId);
                 }
             });
-        });
+            
+            sellerSelectionContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.seller-select-card');
+                if (card) {
+                    const sellerId = parseInt(card.dataset.sellerId, 10);
+                    handleSellerSelection(sellerId);
+                }
+            });
+            
+            changeSellerButton.addEventListener('click', () => {
+                selectedSellerId = null;
+                cart = [];
+                updateCart();
+                [mainPage, adminPage, sellerPage].forEach(p => p.classList.add('hidden'));
+                sellerSelectionPage.classList.remove('hidden');
+            });
 
+            cartItemsContainer.addEventListener('click', (e) => {
+                const removeButton = e.target.closest('.remove-cart-item-btn');
+                if (removeButton) {
+                    const cartItemId = parseInt(removeButton.dataset.cartItemId, 10);
+                    removeFromCart(cartItemId);
+                }
+            });
+
+            sellerMenuListContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('update-menu-btn')) {
+                    const itemId = parseInt(e.target.dataset.id);
+                    updateMenuItem(itemId);
+                }
+            });
+            
+            sellerOrderListContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('complete-order-btn')) {
+                    const orderId = parseInt(e.target.dataset.id);
+                    completeOrder(orderId);
+                } else if (e.target.classList.contains('confirm-pickup-btn')) {
+                    const orderId = parseInt(e.target.dataset.id);
+                    confirmPickup(orderId);
+                }
+            });
+
+            orderButton.addEventListener('click', openPaymentModal);
+            cancelPaymentButton.addEventListener('click', closePaymentModal);
+            confirmPaymentButton.addEventListener('click', processPayment);
+            closeConfirmationButton.addEventListener('click', closeConfirmation);
+            confirmAddToCartButton.addEventListener('click', addToCartWithNote);
+            cancelAddToCartButton.addEventListener('click', closeNoteModal);
+        });
     </script>
 </body>
 </html>
