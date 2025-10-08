@@ -116,14 +116,6 @@
                     <button type="submit" class="w-full bg-pink-400 text-white font-semibold py-3 rounded-lg hover:bg-pink-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-400 transition-transform transform hover:scale-105">Daftar</button>
                 </form>
 
-                <div class="mt-6 p-4 bg-amber-50 rounded-lg text-sm text-gray-600">
-                    <h4 class="font-semibold text-center mb-2 text-gray-700">Info Login (Untuk Demo)</h4>
-                    <ul class="space-y-1 list-disc list-inside">
-                        <li><b>Siswa:</b> Silakan daftar dengan username & password Anda sendiri.</li>
-                        <li><b>Admin:</b> username: `admin`, sandi: `admin123`</li>
-                        <li><b>Penjual:</b> username: `penjual_a` / `penjual_b`, sandi: `123`</li>
-                    </ul>
-                </div>
             </div>
         </div>
         
@@ -642,7 +634,7 @@
                 const savedOrders = localStorage.getItem('kantinDigitalOrders');
                 const savedStudents = localStorage.getItem('kantinDigitalStudents');
 
-                if (savedSellers) {
+                if (savedSellers && JSON.parse(savedSellers).length > 0) {
                     sellers = JSON.parse(savedSellers);
                 } else {
                     sellers = [
@@ -651,7 +643,7 @@
                     ];
                 }
 
-                if (savedMenu) {
+                if (savedMenu && JSON.parse(savedMenu).length > 0) {
                     menuData = JSON.parse(savedMenu);
                 } else {
                      menuData = [
@@ -1334,6 +1326,7 @@
             };
 
             const renderAdminViewMenu = () => {
+                if(!adminViewMenuListContainer) return; // Guard clause
                 adminViewMenuListContainer.innerHTML = '';
                 if (menuData.length === 0) {
                     adminViewMenuListContainer.innerHTML = '<p class="text-gray-500">Belum ada produk yang dijual.</p>';
@@ -1641,7 +1634,8 @@
             const renderSellerReviews = () => {
                 if (!loggedInUser || loggedInUser.type !== 'penjual') return;
 
-                const myRatings = loggedInUser.ratings || [];
+                const sellerData = sellers.find(s => s.id === loggedInUser.id);
+                const myRatings = sellerData.ratings || [];
                 
                 if (myRatings.length === 0) {
                     sellerAverageRatingEl.innerHTML = `<span>-</span>
