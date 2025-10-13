@@ -337,6 +337,10 @@
                      <!-- Laporan Omset -->
                     <div class="bg-white p-6 rounded-2xl shadow-lg">
                         <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Laporan Omset</h3>
+                         <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-gray-700 mb-2">Grafik Profit Harian (7 Hari Terakhir)</h4>
+                            <canvas id="seller-profit-chart"></canvas>
+                        </div>
                         <div class="space-y-4">
                             <div class="p-3 bg-amber-50 rounded-lg">
                                 <p class="text-sm font-semibold text-amber-800">Hari Ini</p>
@@ -395,7 +399,18 @@
                              <p class="text-gray-500 text-center text-sm">Belum ada ulasan.</p>
                         </div>
                     </div>
-                    <!-- Card Profil Toko -->
+                </div>
+
+                <!-- Kolom Kanan -->
+                <div class="space-y-8">
+                     <!-- Pesanan Masuk -->
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Pesanan Masuk</h3>
+                        <div id="seller-order-list" class="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+                            <p class="text-gray-500">Belum ada pesanan yang masuk.</p>
+                        </div>
+                    </div>
+                     <!-- Card Profil Toko -->
                     <div class="bg-white p-6 rounded-2xl shadow-lg">
                         <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Profil Toko</h3>
                         <div class="flex flex-col items-center space-y-4">
@@ -434,14 +449,6 @@
                         <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Daftar Menu Saya</h3>
                         <div id="seller-menu-list" class="space-y-6">
                         </div>
-                    </div>
-                </div>
-
-                <!-- Kolom Kanan: Pesanan Masuk -->
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h3 class="text-xl font-bold text-gray-700 border-b pb-4 mb-4">Pesanan Masuk</h3>
-                    <div id="seller-order-list" class="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
-                        <p class="text-gray-500">Belum ada pesanan yang masuk.</p>
                     </div>
                 </div>
             </main>
@@ -553,6 +560,7 @@
             let selectedSellerId = null;
             let currentOrderIdToReview = null;
             let adminChart = null;
+            let sellerChart = null;
 
             // --- DOM ELEMENTS ---
             const loginPage = document.getElementById('login-page');
@@ -648,40 +656,57 @@
             };
 
             const loadState = () => {
-                const savedSellers = localStorage.getItem('kantinDigitalSellers');
-                const savedMenu = localStorage.getItem('kantinDigitalMenu');
-                const savedOrders = localStorage.getItem('kantinDigitalOrders');
-                const savedStudents = localStorage.getItem('kantinDigitalStudents');
+                try {
+                    const savedSellers = localStorage.getItem('kantinDigitalSellers');
+                    const savedMenu = localStorage.getItem('kantinDigitalMenu');
+                    const savedOrders = localStorage.getItem('kantinDigitalOrders');
+                    const savedStudents = localStorage.getItem('kantinDigitalStudents');
 
-                if (savedSellers && JSON.parse(savedSellers).length > 0) {
-                    sellers = JSON.parse(savedSellers);
-                } else {
+                    if (savedSellers) {
+                        sellers = JSON.parse(savedSellers);
+                    } else {
+                        sellers = [
+                            { id: 1, name: 'Warung Bu Siti', username: 'penjual_a', password: '123', logo: 'https://placehold.co/100x100/A7F3D0/1E40AF?text=B.S', ratings: [] },
+                            { id: 2, name: 'Kantin Pak Budi', username: 'penjual_b', password: '123', logo: 'https://placehold.co/100x100/BAE6FD/991B1B?text=P.B', ratings: [] }
+                        ];
+                    }
+
+                    if (savedMenu) {
+                        menuData = JSON.parse(savedMenu);
+                    } else {
+                         menuData = [
+                            { id: 1, name: "Nasi Goreng", price: 15000, image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=800&auto=format&fit=crop", stock: 10, sellerId: 1 },
+                            { id: 2, name: "Mie Ayam", price: 12000, image: "https://images.unsplash.com/photo-1668553114521-3d5f30335787?q=80&w=800&auto=format&fit=crop", stock: 8, sellerId: 1 },
+                            { id: 4, name: "Bakso", price: 12000, image: "https://images.unsplash.com/photo-1599708453995-1c3f3b9786a3?q=80&w=800&auto=format&fit=crop", stock: 15, sellerId: 2 },
+                            { id: 7, name: "Es Teh Manis", price: 4000, image: "https://images.unsplash.com/photo-1556679343-c7306c8b9983?q=80&w=800&auto=format&fit=crop", stock: 20, sellerId: 2 },
+                        ];
+                    }
+
+                    if (savedOrders) {
+                        orders = JSON.parse(savedOrders).map(order => ({
+                            ...order,
+                            timestamp: new Date(order.timestamp)
+                        }));
+                    }
+                    
+                    if (savedStudents) {
+                        students = JSON.parse(savedStudents);
+                    }
+                } catch (error) {
+                    console.error("Error loading state from localStorage:", error);
+                    // Reset to defaults if localStorage is corrupt
                     sellers = [
                         { id: 1, name: 'Warung Bu Siti', username: 'penjual_a', password: '123', logo: 'https://placehold.co/100x100/A7F3D0/1E40AF?text=B.S', ratings: [] },
                         { id: 2, name: 'Kantin Pak Budi', username: 'penjual_b', password: '123', logo: 'https://placehold.co/100x100/BAE6FD/991B1B?text=P.B', ratings: [] }
                     ];
-                }
-
-                if (savedMenu && JSON.parse(savedMenu).length > 0) {
-                    menuData = JSON.parse(savedMenu);
-                } else {
-                     menuData = [
+                    students = [];
+                    orders = [];
+                    menuData = [
                         { id: 1, name: "Nasi Goreng", price: 15000, image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=800&auto=format&fit=crop", stock: 10, sellerId: 1 },
                         { id: 2, name: "Mie Ayam", price: 12000, image: "https://images.unsplash.com/photo-1668553114521-3d5f30335787?q=80&w=800&auto=format&fit=crop", stock: 8, sellerId: 1 },
                         { id: 4, name: "Bakso", price: 12000, image: "https://images.unsplash.com/photo-1599708453995-1c3f3b9786a3?q=80&w=800&auto=format&fit=crop", stock: 15, sellerId: 2 },
                         { id: 7, name: "Es Teh Manis", price: 4000, image: "https://images.unsplash.com/photo-1556679343-c7306c8b9983?q=80&w=800&auto=format&fit=crop", stock: 20, sellerId: 2 },
                     ];
-                }
-
-                if (savedOrders) {
-                    orders = JSON.parse(savedOrders).map(order => ({
-                        ...order,
-                        timestamp: new Date(order.timestamp)
-                    }));
-                }
-                
-                if (savedStudents) {
-                    students = JSON.parse(savedStudents);
                 }
             };
             
@@ -734,6 +759,7 @@
                     renderSellerOrders();
                     renderSellerMenu();
                     renderSellerFinancials();
+                    renderSellerChart();
                     renderSellerReviews();
                 }
                 else if (student) {
@@ -1526,6 +1552,85 @@
                 profitBulanIniEl.textContent = formatCurrency(profitMonth);
                 omsetTahunIniEl.textContent = formatCurrency(omsetYear);
                 profitTahunIniEl.textContent = formatCurrency(profitYear);
+            };
+
+            const renderSellerChart = () => {
+                if (!loggedInUser || loggedInUser.type !== 'penjual') return;
+
+                const ctx = document.getElementById('seller-profit-chart').getContext('2d');
+
+                const labels = [];
+                const data = [];
+                const dailyProfits = {};
+
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const formattedDate = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                    labels.push(formattedDate);
+                    dailyProfits[date.toDateString()] = 0;
+                }
+
+                orders.forEach(order => {
+                    const orderDateStr = order.timestamp.toDateString();
+                    if (dailyProfits.hasOwnProperty(orderDateStr)) {
+                        let profitFromOrder = 0;
+                        order.items.forEach(item => {
+                            if (item.sellerId === loggedInUser.id) {
+                                profitFromOrder += item.price * (item.quantity || 1) * 0.90; // Calculate 90% profit
+                            }
+                        });
+                        dailyProfits[orderDateStr] += profitFromOrder;
+                    }
+                });
+
+                labels.forEach(label => {
+                    const dateKey = Object.keys(dailyProfits).find(key =>
+                        new Date(key).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) === label
+                    );
+                    data.push(dateKey ? dailyProfits[dateKey] : 0);
+                });
+
+                if (sellerChart) {
+                    sellerChart.destroy();
+                }
+
+                sellerChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Profit Harian (Bersih)',
+                            data: data,
+                            backgroundColor: 'rgba(244, 114, 182, 0.2)',
+                            borderColor: 'rgba(244, 114, 182, 1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        return 'Rp ' + value / 1000 + 'k';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Profit: ${formatCurrency(context.raw)}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             };
 
             const renderOrders = () => {
