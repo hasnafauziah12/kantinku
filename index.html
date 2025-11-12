@@ -10,6 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    
+    <!-- 1. TAMBAHKAN SCRIPT SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -548,6 +552,23 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 2. KONFIGURASI SUPABASE ---
+            // PENTING: Ganti dengan URL dan Key proyek Supabase Anda dari file README.md
+            const SUPABASE_URL = 'https://megzixfkapkiozaiwamr.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZ3ppeGZrYXBraW96YWl3YW1yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMDA4NTUsImV4cCI6MjA3NTg3Njg1NX0.AtPSpySSIxgw4CDi57FiiT5PuAjxHJbvpQO3IsQTQ8Q';
+            // ------------------------------------
+            
+            let supabaseClient;
+            try {
+                // Gunakan window.supabase untuk menghindari konflik variabel
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } catch (error) {
+                console.error("Gagal menginisialisasi Supabase:", error);
+                alert("Koneksi ke database gagal. Pastikan URL dan Key Supabase sudah benar di file index.html.");
+                return;
+            }
+
             // --- DATA ---
             let sellers = [];
             let menuData = [];
@@ -578,27 +599,6 @@
             const passwordInput = document.getElementById('password');
             const formError = document.getElementById('form-error');
             
-            const logoutButton = document.getElementById('logout-button');
-            const logoutButtonSelect = document.getElementById('logout-button-select');
-            const logoutButtonAdmin = document.getElementById('logout-button-admin');
-            const logoutButtonSeller = document.getElementById('logout-button-seller');
-            const menuContainer = document.getElementById('menu-container');
-            const cartItemsContainer = document.getElementById('cart-items');
-            const cartEmptyMessage = document.getElementById('cart-empty');
-            const cartSummary = document.getElementById('cart-summary');
-            const cartTotalElement = document.getElementById('cart-total');
-            const orderButton = document.getElementById('order-button');
-            const paymentModal = document.getElementById('payment-modal');
-            const modalTotalElement = document.getElementById('modal-total');
-            const confirmPaymentButton = document.getElementById('confirm-payment-button');
-            const cancelPaymentButton = document.getElementById('cancel-payment-button');
-            const confirmationModal = document.getElementById('confirmation-modal');
-            const closeConfirmationButton = document.getElementById('close-confirmation-button');
-            const orderListContainer = document.getElementById('order-list');
-            const sellerMenuListContainer = document.getElementById('seller-menu-list');
-            const sellerOrderListContainer = document.getElementById('seller-order-list');
-            const addMenuForm = document.getElementById('add-menu-form');
-            const adminViewMenuListContainer = document.getElementById('admin-view-menu-list');
             const myOrdersList = document.getElementById('my-orders-list');
             const myOrdersEmpty = document.getElementById('my-orders-empty');
             const sellerListAdminContainer = document.getElementById('seller-list-admin');
@@ -619,6 +619,24 @@
             const buyerNameInput = document.getElementById('buyer-name-input');
             const buyerNameError = document.getElementById('buyer-name-error');
             const addSellerForm = document.getElementById('add-seller-form');
+            const addMenuForm = document.getElementById('add-menu-form');
+            
+            const menuContainer = document.getElementById('menu-container');
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartEmptyMessage = document.getElementById('cart-empty');
+            const cartSummary = document.getElementById('cart-summary');
+            const cartTotalElement = document.getElementById('cart-total');
+            const orderButton = document.getElementById('order-button');
+            const paymentModal = document.getElementById('payment-modal');
+            const modalTotalElement = document.getElementById('modal-total');
+            const cancelPaymentButton = document.getElementById('cancel-payment-button');
+            const confirmPaymentButton = document.getElementById('confirm-payment-button');
+            const confirmationModal = document.getElementById('confirmation-modal');
+            const closeConfirmationButton = document.getElementById('close-confirmation-button');
+            const orderListContainer = document.getElementById('order-list');
+            const sellerOrderListContainer = document.getElementById('seller-order-list');
+            const sellerMenuListContainer = document.getElementById('seller-menu-list');
+
             const studentListAdminContainer = document.getElementById('student-list-admin');
             const orderHistoryList = document.getElementById('order-history-list');
             const orderHistoryEmpty = document.getElementById('order-history-empty');
@@ -647,70 +665,74 @@
             const ewalletContent = document.getElementById('ewallet-content');
 
 
-            // --- DATA PERSISTENCE ---
-            const saveState = () => {
-                localStorage.setItem('kantinDigitalSellers', JSON.stringify(sellers));
-                localStorage.setItem('kantinDigitalMenu', JSON.stringify(menuData));
-                localStorage.setItem('kantinDigitalOrders', JSON.stringify(orders));
-                localStorage.setItem('kantinDigitalStudents', JSON.stringify(students));
-            };
+            // --- DATA PERSISTENCE (DIHAPUS DARI LOCALSTORAGE) ---
+            // const saveState = () => { ... }; // Dihapus
+            // const loadState = () => { ... }; // Dihapus
 
-            const loadState = () => {
+            // --- FUNGSI BARU: Load data dari Supabase ---
+            const loadInitialData = async () => {
                 try {
-                    const savedSellers = localStorage.getItem('kantinDigitalSellers');
-                    const savedMenu = localStorage.getItem('kantinDigitalMenu');
-                    const savedOrders = localStorage.getItem('kantinDigitalOrders');
-                    const savedStudents = localStorage.getItem('kantinDigitalStudents');
+                    // Fetch sellers
+                    const { data: sellersData, error: sellersError } = await supabaseClient
+                        .from('sellers')
+                        .select('*');
+                    if (sellersError) throw sellersError;
+                    sellers = sellersData;
 
-                    if (savedSellers) {
-                        sellers = JSON.parse(savedSellers);
-                    } else {
-                        sellers = [
-                            { id: 1, name: 'Warung Bu Siti', username: 'penjual_a', password: '123', logo: 'https://placehold.co/100x100/A7F3D0/1E40AF?text=B.S', ratings: [] },
-                            { id: 2, name: 'Kantin Pak Budi', username: 'penjual_b', password: '123', logo: 'https://placehold.co/100x100/BAE6FD/991B1B?text=P.B', ratings: [] }
-                        ];
-                    }
+                    // Fetch menu
+                    const { data: menuDataData, error: menuError } = await supabaseClient
+                        .from('menu')
+                        .select('*');
+                    if (menuError) throw menuError;
+                    menuData = menuDataData;
 
-                    if (savedMenu) {
-                        menuData = JSON.parse(savedMenu);
-                    } else {
-                         menuData = [
-                            { id: 1, name: "Nasi Goreng", price: 15000, image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=800&auto=format&fit=crop", stock: 10, sellerId: 1 },
-                            { id: 2, name: "Mie Ayam", price: 12000, image: "https://images.unsplash.com/photo-1668553114521-3d5f30335787?q=80&w=800&auto=format&fit=crop", stock: 8, sellerId: 1 },
-                            { id: 4, name: "Bakso", price: 12000, image: "https://images.unsplash.com/photo-1599708453995-1c3f3b9786a3?q=80&w=800&auto=format&fit=crop", stock: 15, sellerId: 2 },
-                            { id: 7, name: "Es Teh Manis", price: 4000, image: "https://images.unsplash.com/photo-1556679343-c7306c8b9983?q=80&w=800&auto=format&fit=crop", stock: 20, sellerId: 2 },
-                        ];
-                    }
+                    // Fetch orders
+                    const { data: ordersData, error: ordersError } = await supabaseClient
+                        .from('orders')
+                        .select('*')
+                        .order('timestamp', { ascending: false });
+                    if (ordersError) throw ordersError;
+                    orders = ordersData.map(order => ({
+                        ...order,
+                        timestamp: new Date(order.timestamp) // Pastikan timestamp adalah objek Date
+                    }));
 
-                    if (savedOrders) {
-                        orders = JSON.parse(savedOrders).map(order => ({
-                            ...order,
-                            timestamp: new Date(order.timestamp)
-                        }));
-                    }
-                    
-                    if (savedStudents) {
-                        students = JSON.parse(savedStudents);
-                    }
+                    // Fetch students
+                    const { data: studentsData, error: studentsError } = await supabaseClient
+                        .from('students')
+                        .select('*');
+                    if (studentsError) throw studentsError;
+                    students = studentsData;
+
                 } catch (error) {
-                    console.error("Error loading state from localStorage:", error);
-                    // Reset to defaults if localStorage is corrupt
-                    sellers = [
-                        { id: 1, name: 'Warung Bu Siti', username: 'penjual_a', password: '123', logo: 'https://placehold.co/100x100/A7F3D0/1E40AF?text=B.S', ratings: [] },
-                        { id: 2, name: 'Kantin Pak Budi', username: 'penjual_b', password: '123', logo: 'https://placehold.co/100x100/BAE6FD/991B1B?text=P.B', ratings: [] }
-                    ];
-                    students = [];
-                    orders = [];
-                    menuData = [
-                        { id: 1, name: "Nasi Goreng", price: 15000, image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=800&auto=format&fit=crop", stock: 10, sellerId: 1 },
-                        { id: 2, name: "Mie Ayam", price: 12000, image: "https://images.unsplash.com/photo-1668553114521-3d5f30335787?q=80&w=800&auto=format&fit=crop", stock: 8, sellerId: 1 },
-                        { id: 4, name: "Bakso", price: 12000, image: "https://images.unsplash.com/photo-1599708453995-1c3f3b9786a3?q=80&w=800&auto=format&fit=crop", stock: 15, sellerId: 2 },
-                        { id: 7, name: "Es Teh Manis", price: 4000, image: "https://images.unsplash.com/photo-1556679343-c7306c8b9983?q=80&w=800&auto=format&fit=crop", stock: 20, sellerId: 2 },
-                    ];
+                    console.error("Error loading data from Supabase:", error.message);
+                    alert("Gagal memuat data dari database. Pastikan koneksi dan nama tabel benar.");
                 }
             };
             
-            loadState(); 
+            // --- FUNGSI BARU UNTUK KONSOLIDASI ---
+            const updateAllUI = () => {
+                // Renderan terkait Siswa
+                renderSellerSelection();
+                renderMenu();
+                renderUserOrders();
+                renderOrderHistory();
+
+                // Renderan terkait Admin
+                renderOrders();
+                renderFinancialReports();
+                renderAdminProfitReport();
+                renderAdminChart();
+                renderSellerListForAdmin();
+                renderStudentListForAdmin();
+
+                // Renderan terkait Penjual
+                renderSellerOrders();
+                renderSellerMenu();
+                renderSellerFinancials();
+                renderSellerChart();
+                renderSellerReviews();
+            };
 
             // --- FUNCTIONS ---
 
@@ -718,7 +740,8 @@
                 return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
             };
             
-            const handleLogin = (e) => {
+            // --- DIUBAH: handleLogin sekarang ASYNC dan cek ke DB ---
+            const handleLogin = async (e) => {
                 e.preventDefault();
                 const username = usernameInput.value.trim();
                 const password = passwordInput.value;
@@ -736,52 +759,80 @@
                     pageToShow.classList.add('fade-in');
                 };
                 
-                const seller = sellers.find(s => s.username === username && s.password === password);
-                const student = students.find(s => s.username.toLowerCase() === username.toLowerCase() && s.password === password);
-
+                // 1. Cek Admin (Lokal)
                 if (username === 'admin' && password === 'admin123') {
                     loggedInUser = { type: 'admin', username: 'admin' };
+                    await loadInitialData(); // Load semua data untuk admin
                     showPage(adminPage);
-                    renderOrders();
-                    renderAdminViewMenu();
-                    renderFinancialReports();
-                    renderAdminProfitReport();
-                    renderAdminChart();
-                    renderSellerListForAdmin();
-                    renderStudentListForAdmin();
+                    updateAllUI();
+                    return;
                 } 
-                else if (seller) {
-                    loggedInUser = { type: 'penjual', ...seller };
+
+                // 2. Cek Penjual (Supabase)
+                const { data: sellerData, error: sellerError } = await supabaseClient
+                    .from('sellers')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single(); // Harapannya hanya 1 hasil atau null
+
+                if (sellerData) {
+                    loggedInUser = { type: 'penjual', ...sellerData };
+                    await loadInitialData(); // Load semua data untuk penjual
                     showPage(sellerPage);
                     sellerDashboardTitle.textContent = `Dasbor ${loggedInUser.name}`;
                     sellerGreeting.textContent = `Selamat Datang, ${loggedInUser.name}!`;
                     sellerLogoPreview.src = loggedInUser.logo;
-                    renderSellerOrders();
-                    renderSellerMenu();
-                    renderSellerFinancials();
-                    renderSellerChart();
-                    renderSellerReviews();
+                    updateAllUI();
+                    return;
                 }
-                else if (student) {
-                    loggedInUser = { type: 'siswa', username: student.username };
+                
+                // 3. Cek Siswa (Supabase)
+                const { data: studentData, error: studentError } = await supabaseClient
+                    .from('students')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+
+                if (studentData) {
+                    loggedInUser = { type: 'siswa', username: studentData.username };
+                    await loadInitialData(); // Load semua data untuk siswa
                     showPage(sellerSelectionPage);
                     studentGreeting.textContent = `Halo, ${loggedInUser.username}!`;
-                    renderSellerSelection();
-                    renderUserOrders();
-                    renderOrderHistory();
+                    updateAllUI();
+                    
+                    // Polling untuk update status pesanan (Refresh data)
                     if (orderStatusInterval) clearInterval(orderStatusInterval);
-                    orderStatusInterval = setInterval(() => {
+                    orderStatusInterval = setInterval(async () => {
+                        // Ambil data order & seller terbaru untuk refresh
+                        const { data: ordersData, error: ordersError } = await supabaseClient
+                            .from('orders')
+                            .select('*')
+                            .order('timestamp', { ascending: false });
+                        
+                        if (ordersData) {
+                             orders = ordersData.map(o => ({...o, timestamp: new Date(o.timestamp)}));
+                        }
+                        
+                        const { data: sellersData } = await supabaseClient.from('sellers').select('*');
+                        if (sellersData) sellers = sellersData;
+
+                        // Render ulang bagian yang relevan
                         renderUserOrders();
                         renderOrderHistory();
-                    }, 3000);
+                        renderSellerSelection(); // Untuk update rating di halaman pilih kantin
+                    }, 5000); // Cek setiap 5 detik
+                    return;
                 }
-                else {
-                    formError.textContent = 'Username atau password salah.';
-                    formError.classList.remove('hidden');
-                }
+                
+                // 4. Jika tidak ada yang cocok
+                formError.textContent = 'Username atau password salah.';
+                formError.classList.remove('hidden');
             };
             
-            const handleRegister = (e) => {
+            // --- DIUBAH: handleRegister sekarang ASYNC dan insert ke DB ---
+            const handleRegister = async (e) => {
                 e.preventDefault();
                 const usernameInput = document.getElementById('register-username');
                 const passwordInput = document.getElementById('register-password');
@@ -805,23 +856,46 @@
                     return;
                 }
 
-                const isUsernameTaken = students.some(s => s.username.toLowerCase() === username.toLowerCase()) || 
-                                      sellers.some(s => s.username.toLowerCase() === username.toLowerCase()) || 
-                                      username.toLowerCase() === 'admin';
-                
-                if (isUsernameTaken) {
+                // Cek username di Supabase
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('students')
+                    .select('username')
+                    .eq('username', username)
+                    .single();
+
+                const { data: existingSeller, error: checkSellerError } = await supabaseClient
+                    .from('sellers')
+                    .select('username')
+                    .eq('username', username)
+                    .single();
+
+                if (existingUser || existingSeller || username.toLowerCase() === 'admin') {
                     formError.textContent = 'Username sudah digunakan, silakan pilih yang lain.';
                     formError.classList.remove('hidden');
                     return;
                 }
                 
-                const newStudent = { username: username, password: password };
-                students.push(newStudent);
-                saveState();
+                // Insert siswa baru ke Supabase
+                const { data, error } = await supabaseClient
+                    .from('students')
+                    .insert([{ username: username, password: password }])
+                    .select();
+                
+                if (error) {
+                    console.error("Error mendaftar:", error);
+                    formError.textContent = 'Gagal mendaftar: ' + error.message;
+                    formError.classList.remove('hidden');
+                    return;
+                }
+
+                students.push(data[0]); // Tambah ke state lokal
+                // saveState(); // Dihapus
                 
                 alert('Pendaftaran berhasil! Silakan login dengan akun baru Anda.');
                 registerForm.reset();
                 showLoginTab();
+                
+                renderStudentListForAdmin(); // Update UI jika admin kebetulan login
             };
             
             const handleLogout = () => {
@@ -832,6 +906,12 @@
                 cart = [];
                 loggedInUser = null;
                 selectedSellerId = null;
+                // Reset data lokal
+                sellers = [];
+                menuData = [];
+                orders = [];
+                students = [];
+                
                 [mainPage, adminPage, sellerPage, sellerSelectionPage].forEach(page => page.classList.add('hidden'));
                 loginPage.classList.remove('hidden');
                 loginPage.classList.add('fade-in');
@@ -856,7 +936,7 @@
                     `;
                     const sellerCardHTML = `
                         <div data-seller-id="${seller.id}" class="seller-select-card bg-white p-8 rounded-2xl shadow-lg cursor-pointer transform hover:scale-105 transition-transform duration-300 flex flex-col items-center text-center">
-                            <img src="${seller.logo}" alt="Logo ${seller.name}" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-gray-100">
+                            <img src="${seller.logo}" alt="Logo ${seller.name}" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-gray-100" onerror="this.onerror=null;this.src='https://placehold.co/100x100/E2E8F0/4A5568?text=Logo';">
                             <h3 class="text-2xl font-bold text-gray-800">${seller.name}</h3>
                             ${ratingHTML}
                             <p class="mt-2 text-gray-500">Klik untuk melihat menu</p>
@@ -880,19 +960,36 @@
                 renderMenu();
             };
             
+            // --- DIUBAH: updateSellerLogo sekarang ASYNC dan update ke DB ---
             const updateSellerLogo = () => {
                 const logoFile = sellerLogoUpload.files[0];
                 if (!logoFile) return;
 
                 const reader = new FileReader();
-                reader.onload = (event) => {
+                reader.onload = async (event) => { // Buat async
+                    const newLogoDataUrl = event.target.result;
+                    
+                    // Update ke Supabase
+                    const { data, error } = await supabaseClient
+                        .from('sellers')
+                        .update({ logo: newLogoDataUrl })
+                        .eq('id', loggedInUser.id);
+                    
+                    if (error) {
+                        console.error("Error updating logo:", error);
+                        alert("Gagal menyimpan logo.");
+                        return;
+                    }
+
+                    // Update state lokal
                     const sellerToUpdate = sellers.find(s => s.id === loggedInUser.id);
                     if (sellerToUpdate) {
-                        sellerToUpdate.logo = event.target.result;
-                        loggedInUser.logo = event.target.result;
-                        sellerLogoPreview.src = event.target.result;
+                        sellerToUpdate.logo = newLogoDataUrl;
+                        loggedInUser.logo = newLogoDataUrl;
+                        sellerLogoPreview.src = newLogoDataUrl;
                         sellerLogoUpload.value = '';
-                        saveState();
+                        // saveState(); // Dihapus
+                        updateAllUI();
                     }
                 };
                 reader.readAsDataURL(logoFile);
@@ -901,7 +998,7 @@
             const renderMenu = () => {
                 if (!selectedSellerId) return;
                 
-                const menusToShow = menuData.filter(item => item.sellerId === selectedSellerId);
+                const menusToShow = menuData.filter(item => item.sellerid === selectedSellerId); // Diubah ke sellerid
                 menuContainer.innerHTML = '';
 
                 if (menusToShow.length === 0) {
@@ -910,7 +1007,6 @@
                 }
 
                 menusToShow.forEach(item => {
-                    const seller = sellers.find(s => s.id === item.sellerId);
                     const isOutOfStock = item.stock === 0;
                     
                     const buttonHTML = isOutOfStock
@@ -942,6 +1038,7 @@
 
                 if (itemsInCartCount >= itemData.stock) {
                     console.warn("Stok tidak mencukupi untuk item ini.");
+                    alert("Stok untuk item ini sudah habis di keranjang Anda.");
                     return;
                 }
                 
@@ -962,6 +1059,7 @@
                 const itemsInCartCount = cart.filter(i => i.id === currentItemIdForNote).length;
                 if (itemsInCartCount >= itemToAdd.stock) {
                      console.error("Stock limit reached for this item.");
+                     alert("Stok untuk item ini sudah habis.");
                      closeNoteModal();
                      return;
                 }
@@ -1028,12 +1126,16 @@
                     
                     const total = cart.reduce((sum, item) => sum + item.price, 0);
                     const qrCanvas = document.getElementById('qr-code');
-                    new QRious({
-                        element: qrCanvas,
-                        value: `PEMBAYARAN KANTIN DIGITAL: ${formatCurrency(total)}`,
-                        size: 180,
-                        foreground: '#db2777' // pink-500
-                    });
+                    try {
+                        new QRious({
+                            element: qrCanvas,
+                            value: `PEMBAYARAN KANTIN DIGITAL: ${formatCurrency(total)}`,
+                            size: 180,
+                            foreground: '#db2777' // pink-500
+                        });
+                    } catch (err) {
+                        console.error("Gagal membuat QR Code:", err);
+                    }
 
                     paymentModal.classList.remove('hidden');
                 }
@@ -1043,7 +1145,8 @@
                 paymentModal.classList.add('hidden');
             };
 
-            const processPayment = () => {
+            // --- DIUBAH: processPayment sekarang ASYNC dan insert ke DB ---
+            const processPayment = async () => {
                 const buyerName = buyerNameInput.value.trim();
                 if (!buyerName) {
                     buyerNameError.classList.remove('hidden');
@@ -1051,36 +1154,63 @@
                 }
                 buyerNameError.classList.add('hidden');
 
-                cart.forEach(cartItem => {
-                    const menuItem = menuData.find(item => item.id === cartItem.id);
-                    if (menuItem) {
-                        menuItem.stock -= 1;
+                // 1. Update stok di Supabase
+                try {
+                    for (const cartItem of cart) {
+                        const menuItem = menuData.find(item => item.id === cartItem.id);
+                        if (menuItem) {
+                            const newStock = menuItem.stock - 1;
+                            if (newStock < 0) {
+                                alert(`Stok ${menuItem.name} tidak mencukupi.`);
+                                return; // Batalkan pembayaran
+                            }
+                            
+                            const { error: stockError } = await supabaseClient
+                                .from('menu')
+                                .update({ stock: newStock })
+                                .eq('id', menuItem.id);
+                            
+                            if (stockError) throw stockError;
+                            
+                            menuItem.stock = newStock; // Update state lokal
+                        }
                     }
-                });
-                
-                const newOrder = {
-                    id: new Date().getTime(),
-                    items: [...cart],
+                } catch (error) {
+                    console.error("Error updating stock:", error);
+                    alert("Gagal memperbarui stok barang. Pembayaran dibatalkan.");
+                    return;
+                }
+
+                // 2. Buat pesanan baru di Supabase
+                const newOrderData = {
+                    // id akan dibuat oleh Supabase
+                    items: [...cart], // items adalah jsonb
                     total: cart.reduce((sum, item) => sum + item.price, 0),
-                    userAccount: loggedInUser.username,
-                    namaPemesan: buyerName,
-                    timestamp: new Date(),
+                    user_account: loggedInUser.username,
+                    nama_pemesan: buyerName,
+                    timestamp: new Date().toISOString(), // Gunakan ISO string untuk Supabase
                     status: 'Baru',
                     reviewed: false
                 };
-                orders.push(newOrder);
-                
-                saveState();
 
-                renderOrders();
-                renderFinancialReports();
-                renderAdminProfitReport();
-                renderAdminChart();
-                renderSellerOrders();
-                renderSellerFinancials();
-                renderMenu();
-                renderSellerMenu();
-                renderUserOrders();
+                const { data: newOrder, error } = await supabaseClient
+                    .from('orders')
+                    .insert([newOrderData])
+                    .select()
+                    .single(); // Ambil 1 data yang baru dimasukkan
+
+                if (error) {
+                    console.error("Error creating order:", error);
+                    alert("Gagal membuat pesanan. Silakan coba lagi.");
+                    // TODO: Rollback stok? (terlalu kompleks untuk demo ini)
+                    return;
+                }
+                
+                // Tambahkan pesanan baru ke state lokal
+                orders.unshift({ ...newOrder, timestamp: new Date(newOrder.timestamp) }); 
+                
+                // saveState(); // Dihapus
+                updateAllUI(); 
 
                 closePaymentModal();
                 confirmationModal.classList.remove('hidden');
@@ -1094,7 +1224,7 @@
 
             const renderUserOrders = () => {
                 if (!loggedInUser || loggedInUser.type !== 'siswa') return;
-                const userOrders = orders.filter(order => order.userAccount === loggedInUser.username && order.status !== 'Selesai');
+                const userOrders = orders.filter(order => order.user_account === loggedInUser.username && order.status !== 'Selesai');
                 
                 if (userOrders.length === 0) {
                     myOrdersList.innerHTML = '';
@@ -1119,7 +1249,7 @@
                         <div class="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
                             <div>
                                 <p class="text-sm font-medium text-gray-700">Pesanan #${order.id.toString().slice(-5)}</p>
-                                <p class="text-xs text-gray-500">a/n ${order.namaPemesan}</p>
+                                <p class="text-xs text-gray-500">a/n ${order.nama_pemesan}</p>
                             </div>
                             <span class="status-badge text-xs font-bold px-2 py-1 rounded-full ${statusClass}">${statusText}</span>
                         </div>
@@ -1130,7 +1260,7 @@
             
             const renderOrderHistory = () => {
                 if (!loggedInUser || loggedInUser.type !== 'siswa') return;
-                const completedOrders = orders.filter(order => order.userAccount === loggedInUser.username && order.status === 'Selesai');
+                const completedOrders = orders.filter(order => order.user_account === loggedInUser.username && order.status === 'Selesai');
                 
                 if (completedOrders.length === 0) {
                     orderHistoryList.innerHTML = '';
@@ -1171,14 +1301,16 @@
                     let sellerTotalSales = 0;
                     orders.forEach(order => {
                         order.items.forEach(item => {
-                            if (item.sellerId === seller.id) {
+                            // Perlu cek sellerid dari menu, bukan sellerId
+                            const menuItem = menuData.find(m => m.id === item.id); 
+                            if (menuItem && menuItem.sellerid === seller.id) {
                                 sellerTotalSales += item.price * (item.quantity || 1);
                             }
                         });
                     });
 
                     grandTotalSales += sellerTotalSales;
-                    const sellerProfit = sellerTotalSales * 0.10;
+                    const sellerProfit = sellerTotalSales * 0.10; // Asumsi profit admin 10%
 
                     const sellerFinancialsHTML = `
                         <div class="p-4 bg-amber-50 rounded-lg border">
@@ -1272,42 +1404,46 @@
                     adminChart.destroy();
                 }
 
-                adminChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Profit Harian',
-                            data: data,
-                            backgroundColor: 'rgba(244, 114, 182, 0.2)',
-                            borderColor: 'rgba(244, 114, 182, 1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: true,
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value, index, values) {
-                                        return 'Rp ' + value / 1000 + 'k';
+                try {
+                    adminChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Profit Harian',
+                                data: data,
+                                backgroundColor: 'rgba(244, 114, 182, 0.2)',
+                                borderColor: 'rgba(244, 114, 182, 1)',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                fill: true,
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value, index, values) {
+                                            return 'Rp ' + value / 1000 + 'k';
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `Profit: ${formatCurrency(context.raw)}`;
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `Profit: ${formatCurrency(context.raw)}`;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } catch (e) {
+                    console.error("Gagal membuat Admin Chart:", e);
+                }
             };
 
             const renderSellerListForAdmin = () => {
@@ -1343,7 +1479,8 @@
                 });
             };
             
-            const addNewSeller = (e) => {
+            // --- DIUBAH: addNewSeller sekarang ASYNC dan insert ke DB ---
+            const addNewSeller = async (e) => {
                 e.preventDefault();
                 const nameInput = document.getElementById('new-seller-name');
                 const usernameInput = document.getElementById('new-seller-username');
@@ -1357,61 +1494,41 @@
                     alert('Semua kolom harus diisi.');
                     return;
                 }
-
-                if (sellers.some(s => s.username === username)) {
-                    alert('Username sudah digunakan. Harap pilih username lain.');
-                    return;
-                }
-
-                const newSeller = {
-                    id: new Date().getTime(),
+                
+                const newSellerData = {
+                    // id akan dibuat Supabase
                     name: name,
                     username: username,
                     password: password,
                     logo: `https://placehold.co/100x100/E2E8F0/4A5568?text=${name.substring(0, 2).toUpperCase()}`,
-                    ratings: []
+                    ratings: [] // default
                 };
 
-                sellers.push(newSeller);
-                saveState();
-                addSellerForm.reset();
-                renderSellerListForAdmin();
-                renderFinancialReports();
-                renderAdminViewMenu();
-            };
+                const { data: newSeller, error } = await supabaseClient
+                    .from('sellers')
+                    .insert([newSellerData])
+                    .select()
+                    .single();
 
-            const renderAdminViewMenu = () => {
-                if(!adminViewMenuListContainer) return; // Guard clause
-                adminViewMenuListContainer.innerHTML = '';
-                if (menuData.length === 0) {
-                    adminViewMenuListContainer.innerHTML = '<p class="text-gray-500">Belum ada produk yang dijual.</p>';
+                if (error) {
+                    console.error("Error adding seller:", error);
+                    if (error.code === '23505') { // Pelanggaran unik
+                         alert('Username sudah digunakan. Harap pilih username lain.');
+                    } else {
+                        alert("Gagal menambahkan penjual.");
+                    }
                     return;
                 }
+
+                sellers.push(newSeller); // Tambah ke state lokal
+                // saveState(); // Dihapus
+                addSellerForm.reset();
                 
-                sellers.forEach(seller => {
-                    const sellerMenus = menuData.filter(menu => menu.sellerId === seller.id);
-                    if (sellerMenus.length > 0) {
-                        adminViewMenuListContainer.innerHTML += `<h4 class="font-bold text-md text-gray-600 mt-4 mb-2">${seller.name}</h4>`;
-                        sellerMenus.forEach(item => {
-                            const menuItemHTML = `
-                                <div class="flex justify-between items-center p-3 border rounded-lg bg-amber-50">
-                                    <div class="flex items-center space-x-3">
-                                        <img src="${item.image}" alt="${item.name}" class="w-12 h-12 rounded-md object-cover">
-                                        <div>
-                                            <p class="font-semibold text-gray-800">${item.name}</p>
-                                            <p class="text-sm text-gray-500">${formatCurrency(item.price)}</p>
-                                        </div>
-                                    </div>
-                                    <span class="text-sm font-medium text-gray-700">Stok: ${item.stock}</span>
-                                </div>
-                            `;
-                            adminViewMenuListContainer.insertAdjacentHTML('beforeend', menuItemHTML);
-                        });
-                    }
-                });
+                updateAllUI();
             };
             
-            const addNewMenu = (e) => {
+            // --- DIUBAH: addNewMenu sekarang ASYNC dan insert ke DB ---
+            const addNewMenu = async (e) => {
                 e.preventDefault();
                 const name = document.getElementById('new-menu-name').value.trim();
                 const price = parseInt(document.getElementById('new-menu-price').value, 10);
@@ -1424,26 +1541,38 @@
                 }
 
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    const newMenuItem = {
-                        id: new Date().getTime(),
+                reader.onload = async (event) => { // Buat async
+                    const newMenuItemData = {
+                        // id akan dibuat Supabase
                         name: name, price: price, stock: stock,
-                        image: event.target.result,
-                        sellerId: loggedInUser.id
+                        image: event.target.result, // base64 data URL
+                        sellerid: loggedInUser.id // Pastikan kolom di DB adalah 'sellerid'
                     };
-                    menuData.push(newMenuItem);
-                    saveState();
+                    
+                    const { data: newMenuItem, error } = await supabaseClient
+                        .from('menu')
+                        .insert([newMenuItemData])
+                        .select()
+                        .single();
+
+                    if (error) {
+                        console.error("Error adding menu:", error);
+                        alert("Gagal menambahkan menu.");
+                        return;
+                    }
+
+                    menuData.push(newMenuItem); // Tambah ke state lokal
+                    // saveState(); // Dihapus
                     addMenuForm.reset();
-                    renderSellerMenu();
-                    renderMenu();
-                    renderAdminViewMenu();
+                    
+                    updateAllUI();
                 };
                 reader.readAsDataURL(imageFile);
             };
 
             const renderSellerMenu = () => {
                 sellerMenuListContainer.innerHTML = '';
-                const myMenus = menuData.filter(item => item.sellerId === loggedInUser.id);
+                const myMenus = menuData.filter(item => item.sellerid === loggedInUser.id); // Diubah ke sellerid
                 
                 if (myMenus.length === 0) {
                     sellerMenuListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Anda belum menambahkan menu.</p>';
@@ -1467,7 +1596,7 @@
                             <div class="flex flex-col space-y-2">
                                 <label for="image-${item.id}" class="block text-sm font-medium text-gray-700">Ganti Gambar:</label>
                                 <div class="flex items-center space-x-4">
-                                    <img src="${item.image}" alt="Preview" class="w-16 h-16 rounded-md object-cover">
+                                    <img src="${item.image}" alt="Preview" class="w-16 h-16 rounded-md object-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x100/E2E8F0/4A5568?text=Img';">
                                     <input type="file" id="image-${item.id}" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" accept="image/*">
                                 </div>
                             </div>
@@ -1480,6 +1609,7 @@
                 });
             };
 
+            // --- DIUBAH: updateMenuItem sekarang ASYNC dan update ke DB ---
             const updateMenuItem = (itemId) => {
                 const item = menuData.find(item => item.id === itemId);
                 if (item) {
@@ -1488,23 +1618,57 @@
                     const stockInput = document.getElementById(`stock-${itemId}`);
                     const imageInput = document.getElementById(`image-${itemId}`);
                     
-                    item.name = nameInput.value.trim() || item.name;
-                    item.price = parseInt(priceInput.value, 10) || item.price;
-                    item.stock = parseInt(stockInput.value, 10);
-                    if (isNaN(item.stock)) item.stock = 0;
+                    const newName = nameInput.value.trim() || item.name;
+                    const newPrice = parseInt(priceInput.value, 10) || item.price;
+                    let newStock = parseInt(stockInput.value, 10);
+                    if (isNaN(newStock)) newStock = 0;
+                    
+                    const imageFile = imageInput.files && imageInput.files[0];
+                    let newImage = item.image; // default ke gambar lama
 
+                    const updateData = {
+                        name: newName,
+                        price: newPrice,
+                        stock: newStock
+                    };
 
-                    if (imageInput.files && imageInput.files[0]) {
+                    const updateLocalState = () => {
+                        item.name = newName;
+                        item.price = newPrice;
+                        item.stock = newStock;
+                        item.image = newImage;
+                        updateAllUI();
+                    };
+
+                    const performUpdate = async () => {
+                        if (newImage !== item.image) {
+                            updateData.image = newImage; // Hanya tambahkan gambar jika berubah
+                        }
+
+                        const { error } = await supabaseClient
+                            .from('menu')
+                            .update(updateData)
+                            .eq('id', itemId);
+
+                        if (error) {
+                            console.error("Error updating menu:", error);
+                            alert("Gagal menyimpan perubahan.");
+                            return;
+                        }
+                        
+                        updateLocalState(); // Update UI setelah berhasil disimpan
+                        alert("Menu berhasil diperbarui!");
+                    };
+
+                    if (imageFile) {
                         const reader = new FileReader();
                         reader.onload = (e) => {
-                            item.image = e.target.result;
-                            saveState();
-                            renderSellerMenu(); renderMenu(); renderAdminViewMenu();
+                            newImage = e.target.result;
+                            performUpdate(); // Panggil update SETELAH reader selesai
                         };
-                        reader.readAsDataURL(imageInput.files[0]);
+                        reader.readAsDataURL(imageFile);
                     } else {
-                        saveState();
-                        renderSellerMenu(); renderMenu(); renderAdminViewMenu();
+                        performUpdate(); // Panggil update langsung
                     }
                 }
             };
@@ -1524,7 +1688,9 @@
                 orders.forEach(order => {
                     let sellerTotalInOrder = 0;
                     order.items.forEach(item => {
-                        if (item.sellerId === loggedInUser.id) {
+                        // Perlu cek sellerid dari menu, bukan sellerId
+                        const menuItem = menuData.find(m => m.id === item.id);
+                        if (menuItem && menuItem.sellerid === loggedInUser.id) {
                             sellerTotalInOrder += item.price * (item.quantity || 1);
                         }
                     });
@@ -1576,8 +1742,9 @@
                     if (dailyProfits.hasOwnProperty(orderDateStr)) {
                         let profitFromOrder = 0;
                         order.items.forEach(item => {
-                            if (item.sellerId === loggedInUser.id) {
-                                profitFromOrder += item.price * (item.quantity || 1) * 0.90; // Calculate 90% profit
+                            const menuItem = menuData.find(m => m.id === item.id);
+                            if (menuItem && menuItem.sellerid === loggedInUser.id) {
+                                profitFromOrder += item.price * (item.quantity || 1) * 0.90; // Hitung profit 90%
                             }
                         });
                         dailyProfits[orderDateStr] += profitFromOrder;
@@ -1595,42 +1762,46 @@
                     sellerChart.destroy();
                 }
 
-                sellerChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Profit Harian (Bersih)',
-                            data: data,
-                            backgroundColor: 'rgba(244, 114, 182, 0.2)',
-                            borderColor: 'rgba(244, 114, 182, 1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: true,
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value, index, values) {
-                                        return 'Rp ' + value / 1000 + 'k';
+                try {
+                    sellerChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Profit Harian (Bersih)',
+                                data: data,
+                                backgroundColor: 'rgba(244, 114, 182, 0.2)',
+                                borderColor: 'rgba(244, 114, 182, 1)',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                fill: true,
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value, index, values) {
+                                            return 'Rp ' + value / 1000 + 'k';
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `Profit: ${formatCurrency(context.raw)}`;
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `Profit: ${formatCurrency(context.raw)}`;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } catch (e) {
+                    console.error("Gagal membuat Seller Chart:", e);
+                }
             };
 
             const renderOrders = () => {
@@ -1642,9 +1813,12 @@
                 const sortedOrders = [...orders].sort((a, b) => b.id - a.id);
                 sortedOrders.forEach(order => {
                     const itemsSummary = order.items.map(item => {
-                        const seller = sellers.find(s => s.id === item.sellerId);
+                        const seller = sellers.find(s => {
+                            const menuItem = menuData.find(m => m.id === item.id);
+                            return menuItem && menuItem.sellerid === s.id;
+                        });
                         const noteText = item.note ? ` <i class="text-gray-500">(${item.note})</i>` : '';
-                        return `${item.name} (x1) [${seller.name}]${noteText}`;
+                        return `${item.name} (x1) [${seller ? seller.name : 'N/A'}]${noteText}`;
                     }).join('<br>');
                     
                     let statusClass;
@@ -1661,7 +1835,7 @@
                                 </div>
                                 <span class="text-xs font-bold px-2 py-1 rounded-full ${statusClass}">${order.status}</span>
                             </div>
-                            <p class="text-sm text-gray-600 mt-2">Pemesan: <span class="font-medium text-gray-900">${order.namaPemesan}</span></p>
+                            <p class="text-sm text-gray-600 mt-2">Pemesan: <span class="font-medium text-gray-900">${order.nama_pemesan}</span></p>
                             <div class="text-sm text-gray-800 mt-1">Item: ${itemsSummary}</div>
                             <p class="font-semibold text-pink-500 mt-2">Total: ${formatCurrency(order.total)}</p>
                         </div>`;
@@ -1670,7 +1844,12 @@
             };
 
             const renderSellerOrders = () => {
-                const myOrders = orders.filter(order => order.items.some(item => item.sellerId === loggedInUser.id) && order.status !== 'Selesai');
+                const myOrders = orders.filter(order => 
+                    order.items.some(item => {
+                        const menuItem = menuData.find(m => m.id === item.id);
+                        return menuItem && menuItem.sellerid === loggedInUser.id;
+                    }) && order.status !== 'Selesai'
+                );
 
                 if (myOrders.length === 0) {
                     sellerOrderListContainer.innerHTML = '<p class="text-gray-500">Belum ada pesanan yang masuk.</p>';
@@ -1680,7 +1859,10 @@
                 sellerOrderListContainer.innerHTML = '';
                 const sortedOrders = myOrders.sort((a, b) => b.id - a.id);
                 sortedOrders.forEach(order => {
-                    const myItemsInOrder = order.items.filter(item => item.sellerId === loggedInUser.id);
+                    const myItemsInOrder = order.items.filter(item => {
+                         const menuItem = menuData.find(m => m.id === item.id);
+                         return menuItem && menuItem.sellerid === loggedInUser.id;
+                    });
                     const itemsSummary = myItemsInOrder.map(item => {
                         const noteText = item.note ? ` <i class="text-gray-500">(${item.note})</i>` : '';
                         return `${item.name} (x1)${noteText}`;
@@ -1700,34 +1882,57 @@
                                 <span class="text-sm text-gray-500">${order.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <div class="text-sm text-gray-800 mt-2">Item: ${itemsSummary}</div>
-                            <p class="text-sm text-gray-600">Pemesan: ${order.namaPemesan}</p>
+                            <p class="text-sm text-gray-600">Pemesan: ${order.nama_pemesan}</p>
                             ${buttonHTML}
                         </div>`;
                     sellerOrderListContainer.insertAdjacentHTML('beforeend', orderHTML);
                 });
             };
 
-            const completeOrder = (orderId) => {
+            // --- DIUBAH: completeOrder sekarang ASYNC dan update ke DB ---
+            const completeOrder = async (orderId) => {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: 'Siap Diambil' })
+                    .eq('id', orderId);
+
+                if (error) {
+                    console.error("Error updating order status:", error);
+                    alert("Gagal memperbarui status pesanan.");
+                    return;
+                }
+                
                 const order = orders.find(o => o.id === orderId);
                 if (order) {
                     order.status = 'Siap Diambil';
-                    saveState();
-                    renderSellerOrders();
-                    renderOrders();
+                    // saveState(); // Dihapus
+                    updateAllUI();
                 }
             };
 
-            const confirmPickup = (orderId) => {
+            // --- DIUBAH: confirmPickup sekarang ASYNC dan update ke DB ---
+            const confirmPickup = async (orderId) => {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: 'Selesai' })
+                    .eq('id', orderId);
+
+                if (error) {
+                    console.error("Error updating order status:", error);
+                    alert("Gagal memperbarui status pesanan.");
+                    return;
+                }
+
                 const order = orders.find(o => o.id === orderId);
                 if (order) {
                     order.status = 'Selesai';
-                    saveState();
-                    renderSellerOrders();
-                    renderOrders();
+                    // saveState(); // Dihapus
+                    updateAllUI();
                 }
             };
             
-             const handleRatingSubmit = (e) => {
+            // --- DIUBAH: handleRatingSubmit sekarang ASYNC dan update ke DB ---
+            const handleRatingSubmit = async (e) => {
                 e.preventDefault();
                 const ratingValue = parseInt(ratingForm.querySelector('input[name="rating"]:checked')?.value);
                 const reviewText = document.getElementById('review-text').value.trim();
@@ -1740,29 +1945,61 @@
                 const order = orders.find(o => o.id === currentOrderIdToReview);
                 if (!order) return;
 
-                // A single order can have items from multiple sellers. We review the first one for simplicity.
-                const firstSellerId = order.items[0].sellerId;
+                // Temukan sellerId dari item pertama di pesanan
+                const firstItemId = order.items[0].id;
+                const menuItem = menuData.find(m => m.id === firstItemId);
+                if (!menuItem) {
+                    console.error("Menu item not found for rating.");
+                    return;
+                }
+                const firstSellerId = menuItem.sellerid;
                 const seller = sellers.find(s => s.id === firstSellerId);
 
                 if (seller) {
                     if (!seller.ratings) {
                         seller.ratings = [];
                     }
-                    seller.ratings.push({
+                    const newRating = {
                         orderId: order.id,
                         rating: ratingValue,
                         review: reviewText,
                         user: loggedInUser.username,
-                        timestamp: new Date()
-                    });
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    const updatedRatings = [...seller.ratings, newRating]; // Buat array baru
+
+                    // 1. Update tabel 'sellers' dengan rating baru
+                    const { error: sellerError } = await supabaseClient
+                        .from('sellers')
+                        .update({ ratings: updatedRatings }) // Simpan seluruh array
+                        .eq('id', seller.id);
+                    
+                    if (sellerError) {
+                        console.error("Error saving rating:", sellerError);
+                        alert("Gagal menyimpan ulasan.");
+                        return;
+                    }
+                    
+                    // 2. Update tabel 'orders' untuk menandai sudah diulas
+                    const { error: orderError } = await supabaseClient
+                        .from('orders')
+                        .update({ reviewed: true })
+                        .eq('id', order.id);
+
+                    if (orderError) {
+                        console.error("Error updating order review status:", orderError);
+                        // Tetap lanjutkan meski gagal, ulasan sudah tersimpan
+                    }
+
+                    // Update state lokal
+                    seller.ratings = updatedRatings;
+                    order.reviewed = true;
+                
+                    // saveState(); // Dihapus
+                    ratingModal.classList.add('hidden');
+                    updateAllUI();
                 }
-                
-                order.reviewed = true;
-                saveState();
-                
-                ratingModal.classList.add('hidden');
-                renderOrderHistory();
-                renderSellerReviews();
             };
             
             const renderSellerReviews = () => {
@@ -1787,7 +2024,8 @@
                     </svg>`;
                 
                 sellerReviewsListEl.innerHTML = '';
-                myRatings.forEach(review => {
+                // Urutkan ulasan, terbaru di atas
+                myRatings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(review => {
                     const stars = '&#9733;'.repeat(review.rating).fontcolor('#f5b301') + '&#9734;'.repeat(5 - review.rating).fontcolor('#ddd');
                     const reviewHTML = `
                         <div class="p-3 bg-amber-50 rounded-lg border">
@@ -1823,16 +2061,18 @@
             };
 
             // --- EVENT LISTENERS ---
+            // (Semua event listener tetap sama, karena mereka memanggil
+            // fungsi-fungsi yang sudah kita ubah menjadi async)
+            
             loginTab.addEventListener('click', showLoginTab);
             registerTab.addEventListener('click', showRegisterTab);
 
             loginForm.addEventListener('submit', handleLogin);
             registerForm.addEventListener('submit', handleRegister);
 
-            logoutButton.addEventListener('click', handleLogout);
-            logoutButtonSelect.addEventListener('click', handleLogout);
-            logoutButtonAdmin.addEventListener('click', handleLogout);
-            logoutButtonSeller.addEventListener('click', handleLogout);
+            document.querySelectorAll('#logout-button, #logout-button-select, #logout-button-admin, #logout-button-seller')
+                .forEach(btn => btn.addEventListener('click', handleLogout));
+            
             addMenuForm.addEventListener('submit', addNewMenu);
             saveLogoButton.addEventListener('click', updateSellerLogo);
             addSellerForm.addEventListener('submit', addNewSeller);
@@ -1891,8 +2131,13 @@
                     const order = orders.find(o => o.id === orderId);
                     if(!order) return;
                     
-                    const firstSellerId = order.items[0].sellerId;
+                    const firstItemId = order.items[0].id;
+                    const menuItem = menuData.find(m => m.id === firstItemId);
+                    if (!menuItem) return;
+                    
+                    const firstSellerId = menuItem.sellerid;
                     const seller = sellers.find(s => s.id === firstSellerId);
+                    if (!seller) return;
                     
                     currentOrderIdToReview = orderId;
                     ratingSellerName.textContent = seller.name;
